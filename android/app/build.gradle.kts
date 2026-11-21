@@ -11,8 +11,8 @@ android {
         applicationId = "app.myipwidget"
         minSdk = 26
         targetSdk = 34
-        versionCode = 61
-        versionName = "1.19.1"
+        versionCode = 62
+        versionName = "1.19.2"
     }
 
     // A fixed key, so each new version installs over the previous one
@@ -29,6 +29,13 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+        }
+    }
+    // the file is named after the app and its version (no "app-debug")
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "Mostafa-MultiWidget-v${versionName}.apk"
         }
     }
     compileOptions {
