@@ -254,9 +254,16 @@ class SpeedService : Service() {
             (if (withAqi) (Occasions.today()?.let { DOT + FSI + Occasions.sign(it) + PDI } ?: "") else "")
     }
 
+    /** The Persian part of the date line, made a little bigger in the expanded text. */
+    private var datePersian = ""
+
     private fun datePart(): String {
         if (!Prefs.noticeDate(this)) return ""
-        return PersianDate.full() + (Occasions.today()?.let { DOT + FSI + Occasions.sign(it) + PDI } ?: "")
+        val now = java.util.Calendar.getInstance()
+        val persian = PersianDate.full(now).substringBefore("\n")
+        datePersian = persian
+        return FSI + persian + PDI + DOT + PersianDate.gregorian(now) +
+            (Occasions.today()?.let { DOT + FSI + Occasions.sign(it) + PDI } ?: "")
     }
 
     private fun ratePart(): String {
@@ -356,7 +363,14 @@ class SpeedService : Service() {
             .setContentIntent(open())
         if (!compact && expanded.isNotEmpty()) {
             builder.setContentText(collapsed)
-            builder.setStyle(Notification.BigTextStyle().setBigContentTitle(bigTitle).bigText(expanded))
+            val styled = android.text.SpannableString(expanded)
+            val at = if (datePersian.isEmpty()) -1 else expanded.indexOf(datePersian)
+            if (at >= 0) {
+                val end = at + datePersian.length
+                styled.setSpan(android.text.style.RelativeSizeSpan(1.25f), at, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                styled.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), at, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            builder.setStyle(Notification.BigTextStyle().setBigContentTitle(bigTitle).bigText(styled))
         }
         return builder.build()
     }

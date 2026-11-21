@@ -224,12 +224,11 @@ object Prefs {
 
     fun anyNotice(context: Context) = noticeEnabled(context)
 
-    /** Karaj (Alborz) until another city is chosen. */
-    fun cityName(context: Context): String = prefs(context).getString("city_name", null) ?: "کرج"
+    fun cityName(context: Context): String = prefs(context).getString("city_name", "") ?: ""
 
-    fun cityLat(context: Context): Double? = prefs(context).getString("city_lat", null)?.toDoubleOrNull() ?: 35.8327
+    fun cityLat(context: Context): Double? = prefs(context).getString("city_lat", null)?.toDoubleOrNull()
 
-    fun cityLon(context: Context): Double? = prefs(context).getString("city_lon", null)?.toDoubleOrNull() ?: 50.9916
+    fun cityLon(context: Context): Double? = prefs(context).getString("city_lon", null)?.toDoubleOrNull()
 
     fun hasCity(context: Context) = cityLat(context) != null && cityLon(context) != null
 

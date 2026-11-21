@@ -164,4 +164,7 @@
     <string name="update_open">Open download page</string>
     <string name="update_later">Later</string>
     <string name="update_none">You have the latest version (%1$s).</string>
+    <string name="first_usage_title">Allow data-usage access</string>
+    <string name="first_usage_message">To show how much data you use, the phone needs your permission. On the next page choose Mostafa MultiWidget and turn the switch on, then come back.</string>
+    <string name="first_usage_allow">Allow</string>
 </resources>

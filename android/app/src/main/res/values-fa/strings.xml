@@ -162,4 +162,7 @@
     <string name="update_open">باز کردن صفحه‌ی دانلود</string>
     <string name="update_later">بعداً</string>
     <string name="update_none">نسخه‌ی شما آخرین نسخه است (%1$s).</string>
+    <string name="first_usage_title">دسترسی به آمار مصرف اینترنت</string>
+    <string name="first_usage_message">برای نشان دادن حجم مصرف اینترنت، گوشی باید اجازه بدهد. در صفحه‌ی بعد روی Mostafa MultiWidget بزنید و کلید را روشن کنید، بعد برگردید.</string>
+    <string name="first_usage_allow">اجازه دادن</string>
 </resources>

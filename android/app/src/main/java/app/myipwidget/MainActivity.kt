@@ -249,8 +249,12 @@ class MainActivity : Activity() {
             Prefs.setFirstRunDone(this)
             Prefs.setNoticeEnabled(this, true)
             Prefs.setShowSpeedNotice(this, true)
+            firstRun = true
             noticeChanged(Prefs.noticeEnabled(this))
-            askCityFirstTime()
+            // no permission question was needed: go on at once; otherwise after the answer
+            if (Build.VERSION.SDK_INT < 33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                Handler(Looper.getMainLooper()).post { firstRunUsage() }
+            }
         } else {
             SpeedService.sync(this)
         }
@@ -526,6 +530,10 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         // coming back from the usage-access settings page: use the new permission
+        if (waitingUsage) {
+            waitingUsage = false
+            Handler(Looper.getMainLooper()).post { firstRunLocation() }
+        }
         showExtras()
         updateExtras()
         loadChart()
@@ -583,13 +591,17 @@ class MainActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 6) {
             if (grantResults.any { it == PackageManager.PERMISSION_GRANTED }) useGps()
-            else Toast.makeText(this, R.string.gps_denied, Toast.LENGTH_LONG).show()
+            else {
+                Toast.makeText(this, R.string.gps_denied, Toast.LENGTH_LONG).show()
+                firstRunPin()
+            }
             return
         }
         if (grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, R.string.notice_denied, Toast.LENGTH_LONG).show()
         }
         SpeedService.sync(this)
+        if (requestCode == 5) firstRunUsage()
     }
 
     /** Asks the home screen to add the widget (the phone shows its own "add" question). */
@@ -729,18 +741,36 @@ class MainActivity : Activity() {
     }
 
     // ---------------------------------------------------------------- the city
-    /** The first time: say that the city can be chosen, then offer to put the widget on the home screen. */
-    private var pinAfterCity = false
+    // ---------------------------------------------------------------- the first run, one question after the other:
+    // usage access, then the position (the city comes from GPS), then the widget on the home screen
+    private var firstRun = false
+    private var waitingUsage = false
 
-    private fun askCityFirstTime() {
-        var chose = false
+    private fun firstRunUsage() {
+        if (!firstRun) return
+        if (Usage.hasAccess(this)) { firstRunLocation(); return }
         AlertDialog.Builder(this)
-            .setTitle(R.string.city_first_title)
-            .setMessage(R.string.city_first_message)
-            .setPositiveButton(R.string.choose_city) { _, _ -> chose = true; pinAfterCity = true; askCity() }
-            .setNegativeButton(R.string.city_first_keep, null)
-            .setOnDismissListener { if (!chose) addWidget() }
+            .setTitle(R.string.first_usage_title)
+            .setMessage(R.string.first_usage_message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.first_usage_allow) { _, _ ->
+                waitingUsage = true
+                try { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) } catch (e: Exception) { waitingUsage = false; firstRunLocation() }
+            }
+            .setNegativeButton(R.string.battery_later) { _, _ -> firstRunLocation() }
             .show()
+    }
+
+    private fun firstRunLocation() {
+        if (!firstRun) return
+        useGps()
+    }
+
+    /** The end of the first-run questions (also when the position could not be found): the widget is offered. */
+    private fun firstRunPin() {
+        if (!firstRun) return
+        firstRun = false
+        addWidget()
     }
 
     private fun askCity() {
@@ -768,6 +798,7 @@ class MainActivity : Activity() {
         }
         if (providers.isEmpty()) {
             Toast.makeText(this, R.string.gps_off, Toast.LENGTH_LONG).show()
+            firstRunPin()
             return
         }
         Toast.makeText(this, R.string.gps_waiting, Toast.LENGTH_LONG).show()
@@ -779,7 +810,7 @@ class MainActivity : Activity() {
             done = true
             handler.removeCallbacksAndMessages(null)
             try { manager.removeUpdates(listener) } catch (e: Exception) { }
-            if (location == null) Toast.makeText(this, R.string.gps_failed, Toast.LENGTH_LONG).show()
+            if (location == null) { Toast.makeText(this, R.string.gps_failed, Toast.LENGTH_LONG).show(); firstRunPin() }
             else gotLocation(location)
         }
         listener = object : LocationListener {
@@ -892,10 +923,7 @@ class MainActivity : Activity() {
         checkWeather.isChecked = true
         showExtras()
         updateExtras(0L)
-        if (pinAfterCity) {
-            pinAfterCity = false
-            addWidget()
-        }
+        firstRunPin()
     }
 
     private fun copyIp() {
