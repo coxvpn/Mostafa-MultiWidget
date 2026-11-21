@@ -11,10 +11,6 @@
 
 ساخته‌شده توسط مصطفی ماندگاری.
 
-### دانلود
-
-- **اندروید:** از بخش [Releases](https://github.com/coxvpn/Mostafa-MultiWidget/releases/latest) فایل `Mostafa-MultiWidget-vX.Y.Z.apk` را دانلود و نصب کنید. نسخه‌ی جدید روی نسخه‌ی قبلی نصب می‌شود و تنظیمات می‌ماند.
-- **ویندوز:** فایل `Mostafa-MultiWidget-Setup.exe` را از Releases (یا از تب Actions ← آخرین اجرا ← Artifacts) دانلود و اجرا کنید. نیازی به دسترسی مدیر نیست.
 
 ### اندروید
 
@@ -44,14 +40,6 @@
 - **دسترسی‌ها:** آمار مصرف، اجرای بدون محدودیت باتری، آلارم دقیق.
 - **درباره:** زبان، بررسی به‌روزرسانی و لینک کد.
 
-**مشکل‌های رایج**
-- اعلان زیر اعلان‌های دیگر رفت: در برنامه یک بار اعلان را خاموش و روشن کنید. جای نهایی را خود گوشی تعیین می‌کند.
-- مصرف اینترنت نشان داده نمی‌شود: در تنظیمات گوشی «دسترسی به آمار مصرف» را برای برنامه روشن کنید.
-- ویجت به‌روز نمی‌شود: «اجرای بدون محدودیت باتری» را اجازه دهید.
-- اذان یا بیپ سر وقت نمی‌آید: «آلارم‌ها و یادآورها» را برای برنامه اجازه دهید.
-- «الله اکبر» با صدای خود گوشی گفته می‌شود؛ اگر گوشی صدای عربی نداشته باشد، آهنگ انتخابی پخش می‌شود.
-
-**ساخت از کد:** در تب Actions گردش‌کار **Build Android app** را اجرا کنید. نسخه از فایل `android/app/build.gradle.kts` (`versionName`) خوانده می‌شود و یک Release با فایل `Mostafa-MultiWidget-vX.Y.Z.apk` منتشر می‌شود.
 
 ### ویندوز
 
@@ -66,6 +54,11 @@
 - با دو بار کلیک روی ویجت، آی‌پی کپی می‌شود.
 - موقعیت و تنظیمات را به یاد می‌سپارد و با تم تیره و روشن ویندوز هماهنگ است.
 - فقط یک نسخه همزمان اجرا می‌شود.
+<img width="2322" height="1317" alt="guide" src="https://github.com/user-attachments/assets/0c9e5891-9235-45cb-85a1-6dc8756fdf3b" />
+<img width="1560" height="906" alt="themess" src="https://github.com/user-attachments/assets/02c9b57b-3bb3-41d7-8c58-17c2a25102cc" />
+
+<img width="659" height="260" alt="image" src="https://github.com/user-attachments/assets/1441be84-2023-464d-91a1-6b8d800172f5" />
+
 
 **راهنما**
 1. `Mostafa-MultiWidget-Setup.exe` را اجرا کنید و نصب را تمام کنید.
@@ -85,12 +78,8 @@
 
 An all-in-one widget and app for **Android** and **Windows**: IP address and country, live internet speed, weather, date and occasions, prayer times and the dollar rate, all in one place.
 
-Made by Mostafa Mandegari. Based on the open-source project [My-IP-Widget](https://github.com/B3H1Z/My-IP-Widget) by B3H1Z.
+Made by Mostafa Mandegari.
 
-### Download
-
-- **Android:** download `Mostafa-MultiWidget-vX.Y.Z.apk` from [Releases](https://github.com/coxvpn/Mostafa-MultiWidget/releases/latest) and install it. A new version installs over the old one and keeps your settings.
-- **Windows:** download `Mostafa-MultiWidget-Setup.exe` from Releases (or Actions → latest run → Artifacts) and run it. No administrator rights needed.
 
 ### Android
 
@@ -119,13 +108,6 @@ Requires Android 8 or newer.
 - **Hourly beep and prayer sound:** times, days and sound.
 - **Permissions:** usage access, no battery limits, exact alarms.
 - **About:** language, check for updates and the source link.
-
-**Troubleshooting**
-- The notification sank below others: switch it off and on once in the app. The final order is decided by the phone.
-- Data usage is not shown: turn on "usage access" for the app in the phone settings.
-- The widget does not update: allow "run without battery limits".
-- Prayer call or beep is late: allow "alarms and reminders" for the app.
-- "Allahu Akbar" uses the phone's own voice; without an Arabic voice, your chosen melody plays instead.
 
 **Build from source:** run the **Build Android app** workflow in the Actions tab. The version is read from `android/app/build.gradle.kts` (`versionName`) and a Release with `Mostafa-MultiWidget-vX.Y.Z.apk` is published.
 
