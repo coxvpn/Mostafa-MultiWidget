@@ -184,4 +184,6 @@
     <string name="update_allow_install">در صفحه‌ی بعد به این برنامه اجازه‌ی نصب برنامه‌ها را بدهید، بعد دوباره دکمه‌ی به‌روزرسانی را بزنید.</string>
     <string name="update_download_failed">دانلود تمام نشد. اینترنت را بررسی کنید (اگر گیت‌هاب بسته است، فیلترشکن را روشن کنید).</string>
     <string name="update_install_failed">نصب انجام نشد.</string>
+    <string name="update_banner">نسخه‌ی تازه‌ی %1$s آمده است. برای دیدن بزنید.</string>
+    <string name="city_default_tehran">شهر پیش‌فرض تهران است. از تنظیمات می‌توانید شهر خودتان را انتخاب کنید.</string>
 </resources>

@@ -812,6 +812,15 @@ class MainActivity : Activity() {
     /** The end of the first-run questions (also when the position could not be found): the widget is offered. */
     private fun firstRunPin() {
         if (!firstRun) return
+        // without a city there is no weather and no prayer time: Tehran until the person chooses another
+        if (!Prefs.hasCity(this)) {
+            Prefs.setCity(this, "\u062A\u0647\u0631\u0627\u0646", 35.6892, 51.3890)
+            Prefs.setShowWeather(this, true)
+            checkWeather.isChecked = true
+            showExtras()
+            updateExtras(0L)
+            Toast.makeText(this, R.string.city_default_tehran, Toast.LENGTH_LONG).show()
+        }
         firstRun = false
         addWidget()
     }
@@ -1005,47 +1014,83 @@ class MainActivity : Activity() {
     /** Asks GitHub for the latest release and says whether a newer version exists; the download page opens on request. */
     private fun checkUpdate() {
         Toast.makeText(this, R.string.update_checking, Toast.LENGTH_SHORT).show()
+        lookForUpdate(manual = true)
+    }
+
+    private class Latest(val tag: String, val page: String, val apkUrl: String)
+
+    private fun mineVersion(): String =
+        try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
+
+    /**
+     * Asks GitHub for the latest release. [manual]: the button was tapped, so every answer is shown;
+     * otherwise (the quiet check when the app opens) only a new version shows a banner, nothing else.
+     */
+    private fun lookForUpdate(manual: Boolean) {
         Thread {
-            var tag = ""
-            var page = ""
-            var apkUrl = ""
+            var latest: Latest? = null
             try {
                 val body = IpLookup.httpGet("https://api.github.com/repos/coxvpn/Mostafa-MultiWidget/releases/latest", 400000)
                 if (body != null) {
                     val o = org.json.JSONObject(body)
-                    tag = o.optString("tag_name", "")
-                    page = o.optString("html_url", "")
+                    var apk = ""
                     val assets = o.optJSONArray("assets")
                     if (assets != null) {
                         for (i in 0 until assets.length()) {
                             val a = assets.getJSONObject(i)
-                            if (a.optString("name", "").endsWith(".apk")) { apkUrl = a.optString("browser_download_url", ""); break }
+                            if (a.optString("name", "").endsWith(".apk")) { apk = a.optString("browser_download_url", ""); break }
                         }
                     }
+                    latest = Latest(o.optString("tag_name", ""), o.optString("html_url", ""), apk)
                 }
             } catch (e: Exception) {
                 // no answer
             }
             runOnUiThread {
                 if (isFinishing) return@runOnUiThread
-                val mine = try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
-                if (tag.isEmpty()) {
-                    Toast.makeText(this, R.string.update_failed, Toast.LENGTH_LONG).show()
-                } else if (versionNewer(tag, mine)) {
-                    AlertDialog.Builder(this)
-                        .setTitle(R.string.update_title)
-                        .setMessage(getString(R.string.update_found, tag.trimStart('v', 'V'), mine))
-                        .setPositiveButton(if (apkUrl.isNotEmpty()) R.string.update_install else R.string.update_open) { _, _ ->
-                            if (apkUrl.isNotEmpty()) downloadAndInstall(apkUrl) else openPage(page)
-                        }
-                        .setNeutralButton(R.string.update_open) { _, _ -> openPage(page) }
-                        .setNegativeButton(R.string.update_later, null)
-                        .show()
+                val mine = mineVersion()
+                val found = latest
+                if (found == null || found.tag.isEmpty()) {
+                    if (manual) Toast.makeText(this, R.string.update_failed, Toast.LENGTH_LONG).show()
+                } else if (versionNewer(found.tag, mine)) {
+                    showUpdateBanner(found, mine)
+                    if (manual) showUpdateDialog(found, mine)
                 } else {
-                    Toast.makeText(this, getString(R.string.update_none, mine), Toast.LENGTH_LONG).show()
+                    findViewById<TextView>(R.id.update_banner).visibility = View.GONE
+                    if (manual) Toast.makeText(this, getString(R.string.update_none, mine), Toast.LENGTH_LONG).show()
                 }
             }
         }.start()
+    }
+
+    /** A thin line at the top: "a new version is out". It never asks for anything; a tap opens the choices. */
+    private fun showUpdateBanner(latest: Latest, mine: String) {
+        findViewById<TextView>(R.id.update_banner).apply {
+            visibility = View.VISIBLE
+            text = getString(R.string.update_banner, latest.tag.trimStart('v', 'V'))
+            setOnClickListener { showUpdateDialog(latest, mine) }
+        }
+    }
+
+    private fun showUpdateDialog(latest: Latest, mine: String) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.update_title)
+            .setMessage(getString(R.string.update_found, latest.tag.trimStart('v', 'V'), mine))
+            .setPositiveButton(if (latest.apkUrl.isNotEmpty()) R.string.update_install else R.string.update_open) { _, _ ->
+                if (latest.apkUrl.isNotEmpty()) downloadAndInstall(latest.apkUrl) else openPage(latest.page)
+            }
+            .setNeutralButton(R.string.update_open) { _, _ -> openPage(latest.page) }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
+    }
+
+    /** The quiet check when the app opens: at most once every six hours. */
+    private fun quietUpdateCheck() {
+        val prefs = getSharedPreferences("update_check", MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        if (now - prefs.getLong("last", 0L) < 6 * 3600_000L) return
+        prefs.edit().putLong("last", now).apply()
+        lookForUpdate(manual = false)
     }
 
     /** True when version [a] (like "v1.19.0") is higher than [b] (like "1.18.18"). */

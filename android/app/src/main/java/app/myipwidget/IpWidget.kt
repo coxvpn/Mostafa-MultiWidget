@@ -220,7 +220,7 @@ class IpWidget : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, LAYOUTS[layout])
             val styled = layout != 0   // the coloured tile layouts have their own colours
             val clock = Prefs.showClock(context)
-            for (id in intArrayOf(R.id.flag, R.id.country, R.id.ip, R.id.flag_row)) {
+            for (id in intArrayOf(R.id.flag, R.id.country, R.id.ip, R.id.flag_row, R.id.detail)) {
                 views.setViewVisibility(id, if (clock) View.GONE else View.VISIBLE)
             }
             views.setViewVisibility(R.id.clock, if (clock) View.VISIBLE else View.GONE)
@@ -250,11 +250,13 @@ class IpWidget : AppWidgetProvider() {
                 // the tile's colour follows the weather
                 views.setInt(R.id.weather_box, "setBackgroundResource", skyTile(code, night))
                 views.setTextViewText(R.id.weather, if (weather != null) Math.round(weather.temp).toString() + "\u00B0" else "\u2026")
-                val city = Prefs.cityName(context)
-                views.setTextViewText(R.id.city_label, if (city.isEmpty()) "" else "\u2068" + city + "\u2069")
             } else {
                 views.setTextViewText(R.id.weather, if (weather != null) Weather.format(weather) else "\u2026")
             }
+            // the city name next to the air quality (a long name is cut to its first part)
+            var city = Prefs.cityName(context)
+            if (city.length > 14) city = city.split("-", "\u060C", ",").first().trim()
+            views.setTextViewText(R.id.city_label, if (city.isEmpty()) "" else "\u2068" + city + "\u2069")
             views.setViewVisibility(R.id.minmax, if (weather != null) View.VISIBLE else View.INVISIBLE)
             if (weather != null) {
                 views.setTextViewText(R.id.temp_high, Weather.high(weather))

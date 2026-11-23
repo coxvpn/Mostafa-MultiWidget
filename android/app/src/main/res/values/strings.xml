@@ -186,4 +186,6 @@
     <string name="update_allow_install">Allow this app to install apps on the next page, then tap the update button again.</string>
     <string name="update_download_failed">The download did not finish. Check the internet (turn on the VPN if GitHub is blocked).</string>
     <string name="update_install_failed">The installation did not finish.</string>
+    <string name="update_banner">A new version %1$s is out. Tap to see.</string>
+    <string name="city_default_tehran">The default city is Tehran. You can pick your own city in the settings.</string>
 </resources>
