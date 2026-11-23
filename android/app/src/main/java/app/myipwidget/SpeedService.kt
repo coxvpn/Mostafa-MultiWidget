@@ -61,6 +61,13 @@ class SpeedService : Service() {
         override fun onCapabilitiesChanged(network: android.net.Network, caps: NetworkCapabilities) = changed()
     }
 
+    private val batteryReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            Alerts.checkCharge(applicationContext, intent)
+        }
+    }
+    private var batteryWatched = false
+
     private val tick = object : Runnable {
         override fun run() {
             if (!running) return
@@ -112,6 +119,12 @@ class SpeedService : Service() {
             } catch (e: Exception) {
                 // the system wake-up through NetWatch still works
             }
+            if (!batteryWatched) {
+                try {
+                    registerReceiver(batteryReceiver, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                    batteryWatched = true
+                } catch (e: Exception) { }
+            }
             lastRx = -1L
             handler.post { IpWidget.refresh(applicationContext) }   // make sure the IP / flag are current
             handler.post(tick)
@@ -125,6 +138,10 @@ class SpeedService : Service() {
             getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(netCallback)
         } catch (e: Exception) {
             // it was not registered
+        }
+        if (batteryWatched) {
+            try { unregisterReceiver(batteryReceiver) } catch (e: Exception) { }
+            batteryWatched = false
         }
         handler.removeCallbacksAndMessages(null)
         thread.quitSafely()
@@ -185,6 +202,7 @@ class SpeedService : Service() {
         Thread {
             try {
                 Weather.refreshIfStale(app, Weather.FRESH_MS)
+                Weather.checkPrecip(app)
                 Rate.refreshIfStale(app, Weather.FRESH_MS)
                 Usage.update(app)
             } catch (e: Exception) {
@@ -209,7 +227,7 @@ class SpeedService : Service() {
         val flagOn = Prefs.showFlagNotice(this)
         if (hasMain()) {
             manager.notify(ID_MAIN, buildMain())
-            if (flagOn) {
+            if (flagOn && !mergeFlag()) {
                 val key = describeCached().let { it.flag + it.title + it.ip + it.detail } + codeCached()
                 if (key != flagShown) {
                     flagShown = key
@@ -226,6 +244,9 @@ class SpeedService : Service() {
             manager.cancel(ID_FLAG)
         }
     }
+
+    /** Without the speed there is no number to show in the status bar: the country sign (US) takes that place, and the flag lines join the main notification. */
+    private fun mergeFlag(): Boolean = !Prefs.showSpeedNotice(this) && Prefs.showFlagNotice(this) && codeCached().isNotEmpty()
 
     private fun describeCached(): Display {
         val cached = IpLookup.load(this)
@@ -264,6 +285,12 @@ class SpeedService : Service() {
         datePersian = persian
         return FSI + persian + PDI + DOT + PersianDate.gregorian(now) +
             (Occasions.today()?.let { DOT + FSI + Occasions.sign(it) + PDI } ?: "")
+    }
+
+    /** The Persian date alone, for the one-line text. */
+    private fun shortDate(): String {
+        if (!Prefs.noticePrayer(this) && !Prefs.noticeDate(this)) return ""
+        return FSI + PersianDate.full(java.util.Calendar.getInstance()).substringBefore("\n") + PDI
     }
 
     private fun ratePart(): String {
@@ -309,8 +336,10 @@ class SpeedService : Service() {
             else -> azanPart(true)
         }
         fun shortOf(key: String): String = when (key) {
-            "usage", "date" -> ""   // too long for the one-line text
-            "prayer" -> azanPart(false)
+            "usage" -> ""   // too long for the one-line text
+            // the one-line text shows the Persian date where the prayer call would stand (the expanded text keeps the prayer call)
+            "prayer" -> if (Prefs.noticePrayer(this)) shortDate() else ""
+            "date" -> if (Prefs.noticePrayer(this)) "" else shortDate()
             "temp" -> tempPart(false)
             else -> longOf(key)
         }
@@ -348,11 +377,17 @@ class SpeedService : Service() {
             collapsedParts = emptyList()
             expandedLines = emptyList()
         }
-        val collapsed = collapsedParts.filter { it.isNotEmpty() }.joinToString("\u2003\u2003\u2003")
-        val expanded = expandedLines.filter { it.isNotEmpty() }.joinToString("\n")
+        val merged = mergeFlag()
+        val flagLine = if (merged) describeCached().let { listOf(it.flag + " " + it.title, it.ip).filter { x -> x.isNotBlank() }.joinToString(DOT) } else ""
+        val collapsed = (collapsedParts + (if (merged) listOf(describeCached().ip) else emptyList())).filter { it.isNotEmpty() }.joinToString("\u2003\u2003\u2003")
+        val expanded = (expandedLines + (if (merged) listOf(flagLine, describeCached().detail) else emptyList())).filter { it.isNotEmpty() }.joinToString("\n")
 
         val builder = Notification.Builder(this, CHANNEL)
-            .setSmallIcon(if (speedOn) speedIcon(down + up) else Icon.createWithResource(this, R.drawable.ic_stat))
+            .setSmallIcon(
+                if (speedOn) speedIcon(down + up)
+                else if (merged) textIcon(codeCached())
+                else Icon.createWithResource(this, R.drawable.ic_stat),
+            )
             .setContentTitle(title)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

@@ -245,4 +245,73 @@ object Prefs {
         prefs(context).edit().remove("city_name").remove("city_lat").remove("city_lon").apply()
         Weather.clear(context)
     }
+
+    // ------------------------------------------------------------------ alerts
+    /** The alert when the battery is full (on by default). */
+    fun chargeAlert(context: Context) = prefs(context).getBoolean("charge_alert", true)
+
+    fun setChargeAlert(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean("charge_alert", value).apply()
+    }
+
+    /** The alert when rain or snow is coming in the next hours (on by default). */
+    fun rainAlert(context: Context) = prefs(context).getBoolean("rain_alert", true)
+
+    fun setRainAlert(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean("rain_alert", value).apply()
+    }
+
+    /** All the choices as one text (for the backup file). */
+    fun exportJson(context: Context): String {
+        val out = org.json.JSONObject()
+        for ((key, value) in prefs(context).all) {
+            val item = org.json.JSONObject()
+            when (value) {
+                is Boolean -> item.put("b", value)
+                is Int -> item.put("i", value)
+                is Long -> item.put("l", value)
+                is Float -> item.put("f", value.toDouble())
+                is String -> item.put("s", value)
+                else -> continue
+            }
+            out.put(key, item)
+        }
+        return out.toString()
+    }
+
+    /** Puts the choices of a backup file back. False when the text is not a backup. */
+    fun importJson(context: Context, text: String): Boolean {
+        return try {
+            val json = org.json.JSONObject(text)
+            val edit = prefs(context).edit()
+            edit.clear()
+            val keys = json.keys()
+            var count = 0
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val item = json.getJSONObject(key)
+                when {
+                    item.has("b") -> edit.putBoolean(key, item.getBoolean("b"))
+                    item.has("i") -> edit.putInt(key, item.getInt("i"))
+                    item.has("l") -> edit.putLong(key, item.getLong("l"))
+                    item.has("f") -> edit.putFloat(key, item.getDouble("f").toFloat())
+                    item.has("s") -> edit.putString(key, item.getString("s"))
+                    else -> continue
+                }
+                count++
+            }
+            if (count == 0) return false
+            edit.apply()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** How loud the "Allahu Akbar" is, 0..100 (a share of the alarm volume of the phone). */
+    fun azanVolume(context: Context) = prefs(context).getInt("azan_volume", 100).coerceIn(0, 100)
+
+    fun setAzanVolume(context: Context, value: Int) {
+        prefs(context).edit().putInt("azan_volume", value.coerceIn(0, 100)).apply()
+    }
 }

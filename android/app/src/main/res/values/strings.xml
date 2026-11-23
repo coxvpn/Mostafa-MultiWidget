@@ -188,4 +188,27 @@
     <string name="update_install_failed">The installation did not finish.</string>
     <string name="update_banner">A new version %1$s is out. Tap to see.</string>
     <string name="city_default_tehran">The default city is Tehran. You can pick your own city in the settings.</string>
+    <string name="alert_channel">Alerts</string>
+    <string name="alert_charge_title">Battery full</string>
+    <string name="alert_charge_text">The battery is full. Unplug the charger.</string>
+    <string name="alert_rain_title">Rain is coming</string>
+    <string name="alert_rain_text">Rain in about %1$d hours.</string>
+    <string name="alert_snow_title">Snow is coming</string>
+    <string name="alert_snow_text">Snow in about %1$d hours.</string>
+    <string name="section_alerts">Alerts</string>
+    <string name="charge_alert_check">Battery-full alert (text and voice)</string>
+    <string name="rain_alert_check">Rain or snow alert for the next hours</string>
+    <string name="alerts_help">Alerts are written and spoken in the app language. They work while the speed notification is on.</string>
+    <string name="section_top_apps">Apps using the most data today</string>
+    <string name="top_apps_system">System</string>
+    <string name="top_apps_none">No data. Give the usage access in the settings.</string>
+    <string name="section_tools">Tools</string>
+    <string name="azan_test">Test the prayer-call sound</string>
+    <string name="azan_test_failed">The sound could not be played.</string>
+    <string name="backup_save">Save a backup of the settings</string>
+    <string name="backup_load">Restore the settings from a backup</string>
+    <string name="backup_saved">Backup saved.</string>
+    <string name="backup_loaded">Settings restored.</string>
+    <string name="backup_bad">This file is not a backup.</string>
+    <string name="azan_volume">Loudness of the "Allahu Akbar"</string>
 </resources>

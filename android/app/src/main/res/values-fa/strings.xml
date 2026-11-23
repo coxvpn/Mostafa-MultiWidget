@@ -186,4 +186,27 @@
     <string name="update_install_failed">نصب انجام نشد.</string>
     <string name="update_banner">نسخه‌ی تازه‌ی %1$s آمده است. برای دیدن بزنید.</string>
     <string name="city_default_tehran">شهر پیش‌فرض تهران است. از تنظیمات می‌توانید شهر خودتان را انتخاب کنید.</string>
+    <string name="alert_channel">هشدارها</string>
+    <string name="alert_charge_title">باتری کامل شد</string>
+    <string name="alert_charge_text">باتری کامل شد. شارژر را بکشید.</string>
+    <string name="alert_rain_title">باران در راه است</string>
+    <string name="alert_rain_text">تا حدود %1$d ساعت دیگر باران می‌بارد.</string>
+    <string name="alert_snow_title">برف در راه است</string>
+    <string name="alert_snow_text">تا حدود %1$d ساعت دیگر برف می‌بارد.</string>
+    <string name="section_alerts">هشدارها</string>
+    <string name="charge_alert_check">هشدار کامل‌شدن باتری (نوشته و صوتی)</string>
+    <string name="rain_alert_check">هشدار باران یا برف در ساعت‌های آینده</string>
+    <string name="alerts_help">هشدارها به زبان برنامه نوشته و خوانده می‌شوند. وقتی اعلان سرعت روشن باشد کار می‌کنند.</string>
+    <string name="section_top_apps">پرمصرف‌ترین برنامه‌ها امروز</string>
+    <string name="top_apps_system">سیستم</string>
+    <string name="top_apps_none">اطلاعاتی نیست. دسترسی مصرف را در تنظیمات بدهید.</string>
+    <string name="section_tools">ابزارها</string>
+    <string name="azan_test">آزمایش صدای اذان</string>
+    <string name="azan_test_failed">صدا پخش نشد.</string>
+    <string name="backup_save">ذخیره‌ی پشتیبان تنظیمات</string>
+    <string name="backup_load">برگرداندن تنظیمات از پشتیبان</string>
+    <string name="backup_saved">پشتیبان ذخیره شد.</string>
+    <string name="backup_loaded">تنظیمات برگردانده شد.</string>
+    <string name="backup_bad">این فایل پشتیبان نیست.</string>
+    <string name="azan_volume">بلندی صدای «الله اکبر»</string>
 </resources>

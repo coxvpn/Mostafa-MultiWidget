@@ -72,6 +72,52 @@ object Weather {
         }
     }
 
+    private fun isRain(code: Int) = code in 51..67 || code in 80..82 || code in 95..99
+
+    private fun isSnow(code: Int) = code in 71..77 || code in 85..86
+
+    /** Rain or snow in the next three hours: (1 rain / 2 snow, hours from now), or null for none (or when it cannot be read). */
+    fun fetchPrecip(lat: Double, lon: Double): Pair<Int, Int>? {
+        val url = "https://api.open-meteo.com/v1/forecast?latitude=" + "%.4f".format(Locale.US, lat) +
+            "&longitude=" + "%.4f".format(Locale.US, lon) + "&hourly=weather_code&forecast_days=2&timezone=auto"
+        val body = IpLookup.httpGet(url) ?: return null
+        return try {
+            val json = JSONObject(body)
+            val offset = json.optLong("utc_offset_seconds", 0L) * 1000L
+            val times = json.getJSONObject("hourly").getJSONArray("time")
+            val codes = json.getJSONObject("hourly").getJSONArray("weather_code")
+            val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+            val nowLocal = System.currentTimeMillis() + offset
+            for (i in 0 until times.length()) {
+                val start = format.parse(times.getString(i))?.time ?: continue
+                val code = codes.optInt(i, -1)
+                // it is already raining or snowing now: nothing to warn about
+                if (start <= nowLocal && nowLocal < start + 3600000L && (isRain(code) || isSnow(code))) return null
+                val ahead = start - nowLocal
+                if (ahead <= 0L || ahead > 3 * 3600000L) continue
+                val hours = maxOf(1, Math.round(ahead / 3600000.0).toInt())
+                if (isSnow(code)) return Pair(2, hours)
+                if (isRain(code)) return Pair(1, hours)
+            }
+            null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Looks at the next hours (at most every 25 minutes) and raises the alert. Call from a background thread. */
+    fun checkPrecip(context: Context) {
+        if (!Prefs.rainAlert(context)) return
+        val lat = Prefs.cityLat(context) ?: return
+        val lon = Prefs.cityLon(context) ?: return
+        val p = prefs(context)
+        val age = System.currentTimeMillis() - p.getLong("precip_time", 0L)
+        if (age in 0..FRESH_MS) return
+        p.edit().putLong("precip_time", System.currentTimeMillis()).apply()
+        val found = fetchPrecip(lat, lon) ?: return
+        Alerts.rain(context, found.first, found.second)
+    }
+
     /** Air quality (US AQI) from Open-Meteo; -1 when it cannot be read. */
     private fun fetchAqi(lat: Double, lon: Double): Int {
         val url = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + "%.4f".format(Locale.US, lat) +

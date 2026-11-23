@@ -151,7 +151,8 @@ object Beeper {
                         @Deprecated("Deprecated in Java")
                         override fun onError(utteranceId: String?) { latch.countDown() }
                     })
-                    engine.speak("الله أكبر، الله أكبر", TextToSpeech.QUEUE_FLUSH, null, "azan")
+                    val params = android.os.Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, Prefs.azanVolume(context) / 100f) }
+                    engine.speak("الله أكبر، الله أكبر", TextToSpeech.QUEUE_FLUSH, params, "azan")
                 }
             }
         }
@@ -196,6 +197,8 @@ object Beeper {
             player.setDataSource(file.fileDescriptor, file.startOffset, file.length)
             file.close()
             player.prepare()
+            val volume = Prefs.azanVolume(context) / 100f
+            player.setVolume(volume, volume)
             player.start()
             val end = System.currentTimeMillis() + 8000L
             while (player.isPlaying && System.currentTimeMillis() < end) Thread.sleep(100)

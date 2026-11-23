@@ -55,6 +55,44 @@ object Usage {
         return if (wifi < 0 && mobile < 0) null else Today(wifi, mobile)
     }
 
+    /** The apps that used the most data today: (name, bytes), biggest first. Call from a background thread. */
+    fun topApps(context: Context, count: Int = 5): List<Pair<String, Long>> {
+        if (!hasAccess(context)) return emptyList()
+        val manager = context.getSystemService(NetworkStatsManager::class.java) ?: return emptyList()
+        val midnight = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val now = System.currentTimeMillis()
+        val perUid = HashMap<Int, Long>()
+        for (type in intArrayOf(ConnectivityManager.TYPE_WIFI, ConnectivityManager.TYPE_MOBILE)) {
+            try {
+                val stats = manager.querySummary(type, null, midnight, now)
+                val bucket = android.app.usage.NetworkStats.Bucket()
+                while (stats.hasNextBucket()) {
+                    stats.getNextBucket(bucket)
+                    perUid[bucket.uid] = (perUid[bucket.uid] ?: 0L) + bucket.rxBytes + bucket.txBytes
+                }
+                stats.close()
+            } catch (e: Exception) {
+                // this kind of network cannot be read
+            }
+        }
+        val packages = context.packageManager
+        val named = HashMap<String, Long>()
+        for ((uid, bytes) in perUid) {
+            if (bytes <= 0L) continue
+            val label = try {
+                val list = packages.getPackagesForUid(uid)
+                if (list.isNullOrEmpty()) context.getString(R.string.top_apps_system)
+                else packages.getApplicationLabel(packages.getApplicationInfo(list[0], 0)).toString()
+            } catch (e: Exception) {
+                context.getString(R.string.top_apps_system)
+            }
+            named[label] = (named[label] ?: 0L) + bytes
+        }
+        return named.entries.sortedByDescending { it.value }.take(count).map { Pair(it.key, it.value) }
+    }
+
     /** The last [days] days (the oldest first, today last): Wi-Fi and SIM bytes of each. Call from a background thread. */
     fun history(context: Context, days: Int = 7): List<Today> {
         if (!hasAccess(context)) return emptyList()

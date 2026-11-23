@@ -185,6 +185,7 @@ class MainActivity : Activity() {
         }
         findViewById<Button>(R.id.check_update).setOnClickListener { checkUpdate() }
         buildBeepSlots()
+        setupAlertsAndTools()
         colorizeCards()
         // the flag and IP, or the clock, in the widget and on the first page: exactly one is ticked
         val tickIp = findViewById<CheckBox>(R.id.check_show_ip)
@@ -349,6 +350,7 @@ class MainActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if ((requestCode == 31 || requestCode == 32) && resultCode == RESULT_OK) { backupResult(requestCode, data?.data); return }
         if (requestCode != 7 || resultCode != RESULT_OK) return
         val uri = data?.data ?: return
         try {
@@ -535,6 +537,7 @@ class MainActivity : Activity() {
         updateExtras()
         showClockMode()
         loadChart()
+        loadTopApps()
         chargeHandler.removeCallbacks(chargeTick)
         chargeHandler.post(chargeTick)
     }
@@ -583,6 +586,86 @@ class MainActivity : Activity() {
     }
 
     /** The seven-day chart: the system's numbers are read off the main thread. */
+    // ---------------------------------------------------------------- alerts, tools, backup, top apps
+    private fun setupAlertsAndTools() {
+        val charge = findViewById<CheckBox>(R.id.check_charge_alert)
+        val rain = findViewById<CheckBox>(R.id.check_rain_alert)
+        charge.isChecked = Prefs.chargeAlert(this)
+        rain.isChecked = Prefs.rainAlert(this)
+        charge.setOnCheckedChangeListener { _, on -> Prefs.setChargeAlert(this, on) }
+        rain.setOnCheckedChangeListener { _, on -> Prefs.setRainAlert(this, on) }
+        val volume = findViewById<android.widget.SeekBar>(R.id.azan_volume)
+        volume.progress = Prefs.azanVolume(this)
+        volume.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(bar: android.widget.SeekBar, value: Int, fromUser: Boolean) {
+                if (fromUser) Prefs.setAzanVolume(this@MainActivity, value)
+            }
+            override fun onStartTrackingTouch(bar: android.widget.SeekBar) {}
+            // let go of the slider: the sound plays once with the new loudness
+            override fun onStopTrackingTouch(bar: android.widget.SeekBar) {
+                Thread { Beeper.playAzanRecording(applicationContext) }.start()
+            }
+        })
+        findViewById<Button>(R.id.azan_test).setOnClickListener {
+            Thread {
+                val ok = Beeper.playAzanRecording(applicationContext) || Beeper.sayAllahuAkbar(applicationContext)
+                if (!ok) runOnUiThread { Toast.makeText(this, R.string.azan_test_failed, Toast.LENGTH_LONG).show() }
+            }.start()
+        }
+        findViewById<Button>(R.id.backup_save).setOnClickListener {
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+                putExtra(Intent.EXTRA_TITLE, "Mostafa-MultiWidget-backup.json")
+            }
+            try { startActivityForResult(intent, 31) } catch (e: Exception) { }
+        }
+        findViewById<Button>(R.id.backup_load).setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            try { startActivityForResult(intent, 32) } catch (e: Exception) { }
+        }
+    }
+
+    private fun backupResult(requestCode: Int, uri: android.net.Uri?) {
+        uri ?: return
+        try {
+            if (requestCode == 31) {
+                contentResolver.openOutputStream(uri)?.use { it.write(Prefs.exportJson(this).toByteArray(Charsets.UTF_8)) }
+                Toast.makeText(this, R.string.backup_saved, Toast.LENGTH_LONG).show()
+            } else {
+                val text = contentResolver.openInputStream(uri)?.use { String(it.readBytes(), Charsets.UTF_8) } ?: ""
+                if (Prefs.importJson(this, text)) {
+                    Toast.makeText(this, R.string.backup_loaded, Toast.LENGTH_LONG).show()
+                    SpeedService.sync(this)
+                    Beeper.schedule(this)
+                    Beeper.scheduleAzan(this)
+                    IpWidget.redrawFromCache(applicationContext)
+                    recreate()
+                } else {
+                    Toast.makeText(this, R.string.backup_bad, Toast.LENGTH_LONG).show()
+                }
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, R.string.backup_bad, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** The five apps that used the most data today (needs the usage access). */
+    private fun loadTopApps() {
+        val box = findViewById<TextView>(R.id.top_apps)
+        Thread {
+            val list = Usage.topApps(applicationContext, 5)
+            runOnUiThread {
+                if (isFinishing) return@runOnUiThread
+                box.text = if (list.isEmpty()) getString(R.string.top_apps_none)
+                else list.joinToString("\n") { "\u2068" + it.first + "\u2069  \u00B7  " + Formatter.formatShortFileSize(applicationContext, it.second) }
+            }
+        }.start()
+    }
+
     private fun loadChart() {
         val chart = findViewById<UsageChart>(R.id.usage_chart)
         val legend = findViewById<TextView>(R.id.chart_legend)

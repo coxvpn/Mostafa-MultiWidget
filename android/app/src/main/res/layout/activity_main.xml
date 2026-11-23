@@ -1,30 +1,41 @@
 <?xml version='1.0' encoding='utf-8'?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="4dp" android:paddingTop="4dp"><TextView android:id="@+id/page_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/app_name" android:textSize="20sp" android:textStyle="bold" /><TextView android:id="@+id/menu_button" android:layout_width="56dp" android:layout_height="56dp" android:gravity="center" android:text="☰" android:textSize="26sp" android:contentDescription="@string/settings_title" android:clickable="true" android:focusable="true" /></LinearLayout><TextView android:id="@+id/occasion_bar" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginTop="4dp" android:layout_marginBottom="4dp" android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp" android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold" android:visibility="gone" /><TextView android:id="@+id/update_banner" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginBottom="4dp" android:gravity="center" android:paddingTop="8dp" android:paddingBottom="8dp" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" android:background="@drawable/chip_purple" android:visibility="gone" /><ScrollView android:id="@+id/data_page" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="false" android:visibility="visible"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/card_c0" android:gravity="center_horizontal" android:orientation="vertical" android:padding="12dp">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="4dp" android:paddingTop="4dp"><TextView android:id="@+id/page_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/app_name" android:textSize="20sp" android:textStyle="bold" /><TextView android:id="@+id/menu_button" android:layout_width="56dp" android:layout_height="56dp" android:gravity="center" android:text="☰" android:textSize="26sp" android:contentDescription="@string/settings_title" android:clickable="true" android:focusable="true" /></LinearLayout><TextView android:id="@+id/occasion_bar" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginTop="4dp" android:layout_marginBottom="4dp" android:gravity="center" android:paddingTop="6dp" android:paddingBottom="6dp" android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold" android:visibility="gone" /><TextView android:id="@+id/update_banner" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginBottom="4dp" android:gravity="center" android:paddingTop="8dp" android:paddingBottom="8dp" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" android:background="@drawable/chip_purple" android:visibility="gone" /><ScrollView android:id="@+id/data_page" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="false" android:visibility="visible"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/card_c0" android:gravity="center_horizontal" android:orientation="vertical" android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="18dp" android:paddingBottom="18dp">
 
-            <TextView android:id="@+id/date_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="13sp" />
+            <TextView android:id="@+id/date_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center" android:textSize="15sp" />
 
-            <TextView android:id="@+id/rate_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/rate_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center" android:textSize="15sp" android:textStyle="bold" />
 
-            <TextView android:id="@+id/weather_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/weather_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center" android:textSize="17sp" android:textStyle="bold" />
 
-            <TextClock android:id="@+id/clock_main" android:layout_width="wrap_content" android:layout_height="wrap_content" android:format24Hour="HH:mm" android:format12Hour="HH:mm" android:textSize="64sp" android:textStyle="bold" android:layout_marginTop="8dp" android:visibility="gone" /><TextView android:id="@+id/flag" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="30sp" />
+            <TextClock android:id="@+id/clock_main" android:layout_width="match_parent" android:layout_height="wrap_content" android:format24Hour="HH:mm" android:format12Hour="HH:mm" android:gravity="center" android:textSize="72sp" android:textStyle="bold" android:layout_marginTop="14dp" android:visibility="gone" />
 
-            <TextView android:id="@+id/country" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/flag" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:textSize="34sp" />
 
-            <TextView android:id="@+id/ip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="2dp" android:textSize="12sp" />
+            <TextView android:id="@+id/country" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center" android:textSize="15sp" android:textStyle="bold" />
 
-            <TextView android:id="@+id/detail" android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center" android:textSize="12sp" />
+            <TextView android:id="@+id/ip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:padding="2dp" android:textSize="14sp" />
 
-            <TextView android:id="@+id/usage_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:gravity="center" android:textSize="12sp" />
-        <TextView android:id="@+id/charge_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center" android:textSize="14sp" /><Button android:id="@+id/refresh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/refresh" />
+            <TextView android:id="@+id/detail" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center" android:textSize="14sp" />
+
+            <TextView android:id="@+id/usage_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:gravity="center" android:textSize="14sp" />
+
+            <TextView android:id="@+id/charge_now" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:gravity="center" android:textSize="15sp" />
+
+            <Button android:id="@+id/refresh" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/refresh" />
 
             </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/card_c1" android:orientation="vertical" android:padding="16dp">
 
-            <TextView android:id="@+id/chart_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/section_chart" android:textSize="16sp" android:textStyle="bold" android:textColor="#2E9E6B" />
-            <app.myipwidget.UsageChart android:id="@+id/usage_chart" android:layout_width="match_parent" android:layout_height="190dp" android:layout_marginTop="8dp" />
+            <TextView android:id="@+id/chart_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/section_chart" android:textSize="15sp" android:textStyle="bold" android:textColor="#2E9E6B" />
+            <app.myipwidget.UsageChart android:id="@+id/usage_chart" android:layout_width="match_parent" android:layout_height="110dp" android:layout_marginTop="8dp" />
             <TextView android:id="@+id/chart_legend" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/card_c3" android:orientation="vertical" android:padding="16dp" android:layout_marginTop="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/section_top_apps" android:textSize="16sp" android:textStyle="bold" android:textColor="#8E54E9" />
+            <TextView android:id="@+id/top_apps" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:lineSpacingExtra="6dp" android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/card_c2" android:orientation="vertical" android:padding="16dp" android:layout_marginTop="16dp">
@@ -100,6 +111,24 @@
             <CheckBox android:id="@+id/check_azan_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/azan_fajr" />
             <CheckBox android:id="@+id/check_azan_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/azan_dhuhr" />
             <CheckBox android:id="@+id/check_azan_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/azan_maghrib" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/card_c4" android:orientation="vertical" android:padding="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/section_alerts" android:textSize="16sp" android:textStyle="bold" android:textColor="#E0508F" />
+            <CheckBox android:id="@+id/check_charge_alert" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/charge_alert_check" />
+            <CheckBox android:id="@+id/check_rain_alert" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/rain_alert_check" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="@string/alerts_help" android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/card_c5" android:orientation="vertical" android:padding="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/section_tools" android:textSize="16sp" android:textStyle="bold" android:textColor="#1BA3B8" />
+            <TextView android:id="@+id/azan_volume_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/azan_volume" android:textSize="14sp" />
+            <SeekBar android:id="@+id/azan_volume" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:max="100" />
+            <Button android:id="@+id/azan_test" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/azan_test" />
+            <Button android:id="@+id/backup_save" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/backup_save" />
+            <Button android:id="@+id/backup_load" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/backup_load" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/card_c8" android:orientation="vertical" android:padding="16dp">
