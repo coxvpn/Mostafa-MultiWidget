@@ -182,6 +182,30 @@ object Beeper {
     }
 
     /** The sound file picked from the phone; at most 15 seconds of it. */
+    /** Plays the 3-second "Allahu Akbar" recording that is inside the app. False when it could not be played. */
+    fun playAzanRecording(context: Context): Boolean {
+        return try {
+            val player = MediaPlayer()
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build(),
+            )
+            val file = context.applicationContext.resources.openRawResourceFd(R.raw.azan_allahu_akbar)
+            player.setDataSource(file.fileDescriptor, file.startOffset, file.length)
+            file.close()
+            player.prepare()
+            player.start()
+            val end = System.currentTimeMillis() + 8000L
+            while (player.isPlaying && System.currentTimeMillis() < end) Thread.sleep(100)
+            player.release()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private fun playFile(context: Context) {
         try {
             val uri = Prefs.beepCustomUri(context)
@@ -262,8 +286,8 @@ class AzanReceiver : BroadcastReceiver() {
         Thread {
             try {
                 if (key.isNotEmpty() && Prefs.azanSound(app, key)) {
-                    // "Allahu Akbar"; if the phone cannot speak Arabic, the chosen melody instead
-                    if (!Beeper.sayAllahuAkbar(app)) Beeper.play(app, Prefs.beepSound(app))
+                    // the recording of "Allahu Akbar"; if it cannot play, the phone's own voice, then the chosen melody
+                    if (!Beeper.playAzanRecording(app) && !Beeper.sayAllahuAkbar(app)) Beeper.play(app, Prefs.beepSound(app))
                 }
             } finally {
                 Beeper.scheduleAzan(app)

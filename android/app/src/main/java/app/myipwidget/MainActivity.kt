@@ -186,22 +186,19 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.check_update).setOnClickListener { checkUpdate() }
         buildBeepSlots()
         colorizeCards()
-        findViewById<Button>(R.id.choose_clock).apply {
-            text = getString(R.string.clock_button, getString(if (Prefs.showClock(this@MainActivity)) R.string.clock_clock else R.string.clock_ip))
-            setOnClickListener {
-                val items = arrayOf(getString(R.string.clock_ip), getString(R.string.clock_clock))
-                AlertDialog.Builder(this@MainActivity)
-                    .setTitle(R.string.clock_title)
-                    .setSingleChoiceItems(items, if (Prefs.showClock(this@MainActivity)) 1 else 0) { dialog, which ->
-                        Prefs.setShowClock(this@MainActivity, which == 1)
-                        text = getString(R.string.clock_button, items[which])
-                        IpWidget.redrawFromCache(applicationContext)
-                        dialog.dismiss()
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
-            }
+        // the flag and IP, or the clock, in the widget and on the first page: exactly one is ticked
+        val tickIp = findViewById<CheckBox>(R.id.check_show_ip)
+        val tickClock = findViewById<CheckBox>(R.id.check_show_clock)
+        fun chooseClock(clock: Boolean) {
+            Prefs.setShowClock(this, clock)
+            tickIp.setOnCheckedChangeListener(null); tickClock.setOnCheckedChangeListener(null)
+            tickIp.isChecked = !clock; tickClock.isChecked = clock
+            tickIp.setOnCheckedChangeListener { _, _ -> chooseClock(false) }
+            tickClock.setOnCheckedChangeListener { _, _ -> chooseClock(true) }
+            showClockMode()
+            IpWidget.redrawFromCache(applicationContext)
         }
+        chooseClock(Prefs.showClock(this))
         val beepTimes = findViewById<View>(R.id.beep_container)
         val beepToggle = findViewById<TextView>(R.id.beep_times_toggle)
         beepToggle.text = getString(R.string.beep_times_closed)
@@ -536,7 +533,53 @@ class MainActivity : Activity() {
         }
         showExtras()
         updateExtras()
+        showClockMode()
         loadChart()
+        chargeHandler.removeCallbacks(chargeTick)
+        chargeHandler.post(chargeTick)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        chargeHandler.removeCallbacks(chargeTick)
+    }
+
+    // ---------------------------------------------------------------- the charging box: refreshed every 2 seconds while the app is open
+    private val chargeHandler = Handler(Looper.getMainLooper())
+    private val chargeTick = object : Runnable {
+        override fun run() {
+            showCharge()
+            chargeHandler.postDelayed(this, 2000L)
+        }
+    }
+
+    private fun showCharge() {
+        val box = findViewById<TextView>(R.id.charge_now)
+        val info = ChargeInfo.read(this)
+        if (info == null) { box.visibility = View.GONE; return }
+        box.visibility = View.VISIBLE
+        val lines = ArrayList<String>()
+        val temp = String.format(java.util.Locale.US, "%.1f", info.tempTenths / 10.0)
+        if (info.charging) {
+            val source = getString(when (info.source) { 3 -> R.string.charge_wireless; 2 -> R.string.charge_usb; else -> R.string.charge_cable })
+            lines.add(getString(R.string.charge_on, source, info.level))
+            if (info.milliAmps > 0) {
+                lines.add(getString(R.string.charge_power, String.format(java.util.Locale.US, "%.1f", info.watts)))
+                lines.add(getString(R.string.charge_current, info.milliAmps))
+            } else {
+                lines.add(getString(R.string.charge_unknown))
+            }
+            if (info.millivolts > 0) lines.add(getString(R.string.charge_voltage, String.format(java.util.Locale.US, "%.2f", info.millivolts / 1000.0)))
+            if (info.minutesLeft > 0) {
+                lines.add(getString(R.string.charge_left, info.minutesLeft / 60, info.minutesLeft % 60))
+            }
+        } else if (info.full && info.source != 0) {
+            lines.add(getString(R.string.charge_full, info.level))
+        } else {
+            lines.add(getString(R.string.charge_off, info.level))
+        }
+        lines.add(getString(R.string.charge_temp, temp))
+        box.text = lines.joinToString("\n")
     }
 
     /** The seven-day chart: the system's numbers are read off the main thread. */
@@ -965,12 +1008,20 @@ class MainActivity : Activity() {
         Thread {
             var tag = ""
             var page = ""
+            var apkUrl = ""
             try {
                 val body = IpLookup.httpGet("https://api.github.com/repos/coxvpn/Mostafa-MultiWidget/releases/latest", 400000)
                 if (body != null) {
                     val o = org.json.JSONObject(body)
                     tag = o.optString("tag_name", "")
                     page = o.optString("html_url", "")
+                    val assets = o.optJSONArray("assets")
+                    if (assets != null) {
+                        for (i in 0 until assets.length()) {
+                            val a = assets.getJSONObject(i)
+                            if (a.optString("name", "").endsWith(".apk")) { apkUrl = a.optString("browser_download_url", ""); break }
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 // no answer
@@ -984,10 +1035,10 @@ class MainActivity : Activity() {
                     AlertDialog.Builder(this)
                         .setTitle(R.string.update_title)
                         .setMessage(getString(R.string.update_found, tag.trimStart('v', 'V'), mine))
-                        .setPositiveButton(R.string.update_open) { _, _ ->
-                            val url = if (page.isNotEmpty()) page else SOURCE_URL + "/releases/latest"
-                            try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) } catch (e: Exception) { }
+                        .setPositiveButton(if (apkUrl.isNotEmpty()) R.string.update_install else R.string.update_open) { _, _ ->
+                            if (apkUrl.isNotEmpty()) downloadAndInstall(apkUrl) else openPage(page)
                         }
+                        .setNeutralButton(R.string.update_open) { _, _ -> openPage(page) }
                         .setNegativeButton(R.string.update_later, null)
                         .show()
                 } else {
@@ -1007,5 +1058,55 @@ class MainActivity : Activity() {
             if (p != q) return p > q
         }
         return false
+    }
+
+    /** The first page shows the clock instead of the flag and IP when the clock is chosen. */
+    private fun showClockMode() {
+        val clock = Prefs.showClock(this)
+        for (id in intArrayOf(R.id.flag, R.id.country, R.id.ip, R.id.detail)) {
+            findViewById<View>(id).visibility = if (clock) View.GONE else View.VISIBLE
+        }
+        findViewById<View>(R.id.clock_main).visibility = if (clock) View.VISIBLE else View.GONE
+    }
+
+    private fun openPage(page: String) {
+        val url = if (page.isNotEmpty()) page else SOURCE_URL + "/releases/latest"
+        try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) } catch (e: Exception) { }
+    }
+
+    /** Downloads the new app file (with a progress bar) and gives it to the installer. */
+    private fun downloadAndInstall(apkUrl: String) {
+        // the phone must allow this app to install apps: a switch on its own settings page
+        if (Build.VERSION.SDK_INT >= 26 && !packageManager.canRequestPackageInstalls()) {
+            Toast.makeText(this, R.string.update_allow_install, Toast.LENGTH_LONG).show()
+            try {
+                startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, android.net.Uri.parse("package:$packageName")))
+            } catch (e: Exception) { }
+            return
+        }
+        val bar = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; isIndeterminate = true }
+        val label = TextView(this).apply { text = getString(R.string.update_downloading, 0); setPadding(0, 0, 0, 16) }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 8)
+            addView(label); addView(bar)
+        }
+        val dialog = AlertDialog.Builder(this).setTitle(R.string.update_title).setView(box).setCancelable(false).show()
+        Thread {
+            val file = Updater.download(applicationContext, apkUrl) { percent ->
+                runOnUiThread {
+                    if (percent >= 0) {
+                        bar.isIndeterminate = false
+                        bar.progress = percent
+                        label.text = getString(R.string.update_downloading, percent)
+                    }
+                }
+            }
+            val started = file != null && Updater.install(applicationContext, file)
+            runOnUiThread {
+                try { dialog.dismiss() } catch (e: Exception) { }
+                if (!started) Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_LONG).show()
+            }
+        }.start()
     }
 }
