@@ -40,7 +40,13 @@
 
     </LinearLayout>
 
-    <TextClock android:id="@+id/clock" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="3.4" android:format24Hour="HH:mm" android:format12Hour="HH:mm" android:gravity="center" android:maxLines="1" android:textColor="@color/widget_text" android:textStyle="bold" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="6sp" android:autoSizeMaxTextSize="80sp" android:autoSizeStepGranularity="1sp" android:visibility="gone" />
+    <LinearLayout android:id="@+id/clock_row" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="3.4" android:orientation="horizontal" android:gravity="center_vertical" android:visibility="gone">
+        <TextClock android:id="@+id/clock" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="3" android:format24Hour="HH:mm" android:format12Hour="HH:mm" android:gravity="center" android:maxLines="1" android:textColor="@color/widget_text" android:textStyle="bold" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="6sp" android:autoSizeMaxTextSize="80sp" android:autoSizeStepGranularity="1sp" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1.6" android:orientation="vertical" android:gravity="center">
+            <TextView android:id="@+id/flag2" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center" android:maxLines="1" android:textColor="@color/widget_text" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="6sp" android:autoSizeMaxTextSize="30sp" android:autoSizeStepGranularity="1sp" />
+            <TextView android:id="@+id/country2" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:ellipsize="end" android:gravity="center" android:maxLines="1" android:textColor="@color/widget_text" android:textStyle="bold" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="6sp" android:autoSizeMaxTextSize="18sp" android:autoSizeStepGranularity="1sp" />
+        </LinearLayout>
+    </LinearLayout>
 
     <TextView android:id="@+id/detail" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="0.8" android:ellipsize="end" android:maxLines="1" android:textColor="@color/widget_dim" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="6sp" android:autoSizeMaxTextSize="15sp" android:autoSizeStepGranularity="1sp" android:gravity="center" />
 

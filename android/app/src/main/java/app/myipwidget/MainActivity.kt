@@ -794,7 +794,9 @@ class MainActivity : Activity() {
         val rateView = findViewById<TextView>(R.id.rate_now)
         rateView.text = getString(R.string.rate_line, Rate.format(Rate.cached(this)))
         rateView.visibility = if (Prefs.showRate(this)) View.VISIBLE else View.GONE
-        dateNow.text = PersianDate.full()
+        val now = java.util.Calendar.getInstance()
+        dateNow.text = PersianDate.full(now).substringBefore("\n")
+        findViewById<TextView>(R.id.greg_now).text = PersianDate.gregorian(now)
         val occasion = Occasions.today()
         findViewById<TextView>(R.id.occasion_bar).apply {
             if (occasion == null) {
@@ -805,15 +807,44 @@ class MainActivity : Activity() {
                 setBackgroundResource(if (occasion.holiday) R.drawable.chip_red else R.drawable.chip_purple)
             }
         }
-        dateNow.visibility = if (Prefs.showDate(this)) View.VISIBLE else View.GONE
-        val weather = Weather.cached(this)
-        weatherNow.text = if (Prefs.hasCity(this) && weather != null) {
-            Weather.format(weather) + "  " + Weather.range(weather) +
-                (if (weather.aqi >= 0) "  AQI " + weather.aqi else "")
-        } else {
-            ""
+        findViewById<View>(R.id.tile_date).visibility = if (Prefs.showDate(this)) View.VISIBLE else View.GONE
+
+        // the prayer call that is next
+        val azan = if (Prefs.showPrayer(this)) Prayer.next(this) else null
+        findViewById<TextView>(R.id.azan_now).apply {
+            if (azan == null) {
+                visibility = View.GONE
+            } else {
+                visibility = View.VISIBLE
+                text = getString(R.string.azan_word) + " " + getString(azan.nameRes) + " " + Prayer.clockText(azan.time) + "\n" +
+                    Prayer.remainingText(azan.time - System.currentTimeMillis()) + " " + getString(R.string.azan_left)
+            }
         }
-        weatherNow.visibility = if (weatherNow.text.isEmpty()) View.GONE else View.VISIBLE
+
+        // the weather tile: big temperature, smaller high / low, air quality and the city
+        val weather = Weather.cached(this)
+        val tile = findViewById<View>(R.id.tile_weather)
+        if (Prefs.hasCity(this) && weather != null) {
+            tile.visibility = View.VISIBLE
+            val night = now.get(java.util.Calendar.HOUR_OF_DAY).let { it < 6 || it >= 18 }
+            findViewById<TextView>(R.id.sun_now).text = if (night && weather.code == 0) "\uD83C\uDF19" else Weather.symbol(weather.code)
+            weatherNow.text = Math.round(weather.temp).toString() + "\u00B0"
+            findViewById<TextView>(R.id.range_now).text = Weather.range(weather)
+            findViewById<TextView>(R.id.aqi_now).apply {
+                if (weather.aqi >= 0) {
+                    val level = Weather.aqiLevel(weather.aqi)
+                    visibility = View.VISIBLE
+                    text = "AQI " + weather.aqi
+                    setBackgroundResource(intArrayOf(R.drawable.aqi_bg_0, R.drawable.aqi_bg_1, R.drawable.aqi_bg_2, R.drawable.aqi_bg_3, R.drawable.aqi_bg_4, R.drawable.aqi_bg_5)[level.coerceIn(0, 5)])
+                    setTextColor(if (level == 1 || level == 2) 0xFF222222.toInt() else 0xFFFFFFFF.toInt())
+                } else {
+                    visibility = View.GONE
+                }
+            }
+            findViewById<TextView>(R.id.city_now).text = "\u2068" + Prefs.cityLabel(this) + "\u2069"
+        } else {
+            tile.visibility = View.GONE
+        }
 
         cityName.text = if (Prefs.hasCity(this)) Prefs.cityName(this) else getString(R.string.no_city)
 
@@ -1191,7 +1222,7 @@ class MainActivity : Activity() {
     /** The first page shows the clock instead of the flag and IP when the clock is chosen. */
     private fun showClockMode() {
         val clock = Prefs.showClock(this)
-        for (id in intArrayOf(R.id.flag, R.id.country, R.id.ip, R.id.detail)) {
+        for (id in intArrayOf(R.id.ip_row)) {
             findViewById<View>(id).visibility = if (clock) View.GONE else View.VISIBLE
         }
         findViewById<View>(R.id.clock_main).visibility = if (clock) View.VISIBLE else View.GONE

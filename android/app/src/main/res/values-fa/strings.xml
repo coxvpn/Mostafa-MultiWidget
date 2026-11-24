@@ -209,4 +209,5 @@
     <string name="backup_loaded">تنظیمات برگردانده شد.</string>
     <string name="backup_bad">این فایل پشتیبان نیست.</string>
     <string name="azan_volume">بلندی صدای «الله اکبر»</string>
+    <string name="section_backup">پشتیبان‌گیری</string>
 </resources>

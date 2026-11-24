@@ -84,7 +84,7 @@ class IpWidget : AppWidgetProvider() {
         private val latest = AtomicInteger(0)
         private val fetchingSince = AtomicLong(0L)
 
-        private fun skyTile(code: Int, night: Boolean): Int = when (code) {
+        fun skyTile(code: Int, night: Boolean): Int = when (code) {
             45, 48 -> R.drawable.tile_sky_fog
             51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99 -> R.drawable.tile_sky_rain
             71, 73, 75, 77, 85, 86 -> R.drawable.tile_sky_snow
@@ -174,7 +174,7 @@ class IpWidget : AppWidgetProvider() {
         private fun applyTheme(context: Context, views: RemoteViews) {
             val look = look(Prefs.theme(context)) ?: return
             views.setInt(R.id.root, "setBackgroundResource", look.bg)
-            for (id in intArrayOf(R.id.weather, R.id.date, R.id.country, R.id.ip, R.id.wifi, R.id.sim, R.id.refresh, R.id.clock)) {
+            for (id in intArrayOf(R.id.weather, R.id.date, R.id.country, R.id.country2, R.id.ip, R.id.wifi, R.id.sim, R.id.refresh, R.id.clock)) {
                 views.setTextColor(id, look.text)
             }
             for (id in intArrayOf(R.id.date2, R.id.detail, R.id.lbl_wifi, R.id.lbl_sim)) views.setTextColor(id, look.dim)
@@ -220,14 +220,19 @@ class IpWidget : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, LAYOUTS[layout])
             val styled = layout != 0   // the coloured tile layouts have their own colours
             val clock = Prefs.showClock(context)
-            for (id in intArrayOf(R.id.flag, R.id.country, R.id.ip, R.id.flag_row, R.id.detail)) {
-                views.setViewVisibility(id, if (clock) View.GONE else View.VISIBLE)
+            // the IP number and the carrier text are only in the app: the widget has the flag and the country
+            views.setViewVisibility(R.id.ip, View.GONE)
+            views.setViewVisibility(R.id.detail, View.GONE)
+            if (layout == 0) {
+                // the plain layout: the flag and country move into the clock's row, beside the clock
+                views.setViewVisibility(R.id.flag_row, if (clock) View.GONE else View.VISIBLE)
+                views.setViewVisibility(R.id.clock_row, if (clock) View.VISIBLE else View.GONE)
+                views.setTextViewText(R.id.flag2, display.flag)
+                views.setTextViewText(R.id.country2, display.title)
             }
             views.setViewVisibility(R.id.clock, if (clock) View.VISIBLE else View.GONE)
             views.setTextViewText(R.id.flag, display.flag)
             views.setTextViewText(R.id.country, display.title)
-            views.setTextViewText(R.id.ip, shortIp(display.ip))
-            views.setTextViewText(R.id.detail, display.detail)
             views.setTextViewText(R.id.refresh, if (busy) "…" else "↻")
 
             // what to show, as chosen in the app
@@ -253,9 +258,9 @@ class IpWidget : AppWidgetProvider() {
             } else {
                 views.setTextViewText(R.id.weather, if (weather != null) Weather.format(weather) else "\u2026")
             }
-            // the city name next to the air quality (a long name is cut to its first part)
-            var city = Prefs.cityName(context)
-            if (city.length > 14) city = city.split("-", "\u060C", ",").first().trim()
+            // the city name with its province next to the air quality (a very long one is cut to its first part)
+            var city = Prefs.cityLabel(context)
+            if (city.length > 22) city = city.split("-", "\u060C", ",").first().trim()
             views.setTextViewText(R.id.city_label, if (city.isEmpty()) "" else "\u2068" + city + "\u2069")
             views.setViewVisibility(R.id.minmax, if (weather != null) View.VISIBLE else View.INVISIBLE)
             if (weather != null) {

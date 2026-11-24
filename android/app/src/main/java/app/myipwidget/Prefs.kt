@@ -314,4 +314,12 @@ object Prefs {
     fun setAzanVolume(context: Context, value: Int) {
         prefs(context).edit().putInt("azan_volume", value.coerceIn(0, 100)).apply()
     }
+
+    /** The city with its province: "Karaj - Alborz" (just the city when the province is unknown or the same). */
+    fun cityLabel(context: Context): String {
+        val city = cityName(context)
+        if (city.isEmpty()) return ""
+        val province = NearCity.province(city, cityLat(context), cityLon(context))
+        return if (province.isEmpty() || province == city) city else "$city - $province"
+    }
 }

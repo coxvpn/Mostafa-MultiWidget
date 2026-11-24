@@ -271,7 +271,7 @@ class SpeedService : Service() {
         val weather = Weather.cached(this) ?: return ""
         return LRM + Weather.format(weather) +
             (if (withAqi && weather.aqi > 0) DOT + "AQI " + weather.aqi else "") +
-            DOT + FSI + Prefs.cityName(this) + PDI + LRM +
+            DOT + FSI + (if (withAqi) Prefs.cityLabel(this) else Prefs.cityName(this)) + PDI + LRM +
             (if (withAqi) (Occasions.today()?.let { DOT + FSI + Occasions.sign(it) + PDI } ?: "") else "")
     }
 
@@ -378,9 +378,9 @@ class SpeedService : Service() {
             expandedLines = emptyList()
         }
         val merged = mergeFlag()
-        val flagLine = if (merged) describeCached().let { listOf(it.flag + " " + it.title, it.ip).filter { x -> x.isNotBlank() }.joinToString(DOT) } else ""
-        val collapsed = (collapsedParts + (if (merged) listOf(describeCached().ip) else emptyList())).filter { it.isNotEmpty() }.joinToString("\u2003\u2003\u2003")
-        val expanded = (expandedLines + (if (merged) listOf(flagLine, describeCached().detail) else emptyList())).filter { it.isNotEmpty() }.joinToString("\n")
+        val flagLine = if (merged) describeCached().let { it.flag + " " + it.title } else ""
+        val collapsed = (collapsedParts + (if (merged) listOf(flagLine) else emptyList())).filter { it.isNotEmpty() }.joinToString("\u2003\u2003\u2003")
+        val expanded = (expandedLines + (if (merged) listOf(flagLine) else emptyList())).filter { it.isNotEmpty() }.joinToString("\n")
 
         val builder = Notification.Builder(this, CHANNEL)
             .setSmallIcon(
@@ -396,6 +396,7 @@ class SpeedService : Service() {
             .setWhen(startTime)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(open())
+        if (speedOn) builder.setLargeIcon(speedBadge(down + up))
         if (!compact && expanded.isNotEmpty()) {
             builder.setContentText(collapsed)
             val styled = android.text.SpannableString(expanded)
@@ -413,8 +414,8 @@ class SpeedService : Service() {
     private fun buildFlag(): Notification {
         val display = describeCached()
         val code = codeCached()
-        val text = if (Prefs.compactNotice(this)) display.ip
-        else listOf(display.ip, display.detail).filter { it.isNotEmpty() }.joinToString("\n")
+        // only the flag and the country name: the IP number and the carrier text are in the app
+        val text = ""
         val builder = Notification.Builder(this, CHANNEL)
             .setSmallIcon(textIcon(if (code.isEmpty()) "?" else code))
             .setContentTitle(display.flag + " " + display.title)
@@ -466,6 +467,30 @@ class SpeedService : Service() {
     }
 
     /** White text on a transparent square: the system tints it to match the status bar. */
+    /** The round picture at the left of the notification: the speed as a number with its unit, on a blue (K) or green (M) disc. */
+    private fun speedBadge(bytesPerSecond: Double): Icon {
+        val total = if (bytesPerSecond < MIN_SPEED) 0.0 else bytesPerSecond
+        val mega = total >= 1024.0 * 1024.0
+        val number = if (mega) java.util.Locale.US.let { String.format(it, "%.1f", total / 1048576.0) } else (total / 1024.0).toInt().toString()
+        val unit = if (mega) "MB/s" else "KB/s"
+        val size = 128
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (mega) 0xFF2E9E6B.toInt() else 0xFF1E6FD9.toInt() }
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, disc)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+            textSize = 62f
+        }
+        while (paint.measureText(number) > size - 28 && paint.textSize > 20f) paint.textSize -= 2f
+        canvas.drawText(number, size / 2f, 70f, paint)
+        paint.textSize = 26f
+        canvas.drawText(unit, size / 2f, 104f, paint)
+        return Icon.createWithBitmap(bitmap)
+    }
+
     private fun textIcon(text: String): Icon {
         val size = 96
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
