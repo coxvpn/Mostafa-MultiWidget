@@ -7,6 +7,9 @@ on:
       - "android/**"
       - ".github/workflows/android.yml"
 
+permissions:
+  contents: write      # lets the build publish a Release
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,12 +25,34 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Build the app
+      - name: Read the version number
+        id: ver
+        working-directory: android
+        run: |
+          VER=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Version::Mostafa MultiWidget $VER"
+          echo "## Mostafa MultiWidget $VER" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the app (version ${{ steps.ver.outputs.version }})
         working-directory: android
         run: gradle --no-daemon assembleDebug
+
+      - name: Name the app file
+        working-directory: android
+        run: cp app/build/outputs/apk/debug/*.apk "Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk"
 
       - name: Keep the app (download it from the run page)
         uses: actions/upload-artifact@v4
         with:
-          name: MyIPWidget-Android
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}
+          path: android/Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk
+
+      - name: Publish a Release (the app's "check for updates" reads it)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: Mostafa MultiWidget ${{ steps.ver.outputs.version }}
+          body_path: android/release-notes.md   # the changes, written in the Release
+          files: android/Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk
+          make_latest: true
