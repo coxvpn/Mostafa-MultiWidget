@@ -854,10 +854,7 @@ class MainActivity : Activity() {
         val used = Usage.cached(this)
         usageNow.text = when {
             !hasAccess -> getString(R.string.usage_no_access)
-            used != null -> getString(
-                R.string.usage_today,
-                Usage.oneLine(this, used),
-            )
+            used != null -> Usage.englishLine(used)
             else -> ""
         }
         usageNow.visibility = if (usageNow.text.isEmpty()) View.GONE else View.VISIBLE

@@ -154,4 +154,18 @@ object Usage {
     fun oneLine(context: Context, value: Today): String =
         context.getString(R.string.label_wifi) + " " + size(context, value.wifi) + "   " +
             context.getString(R.string.label_sim) + " " + size(context, value.mobile)
+
+    private fun english(bytes: Long): String {
+        if (bytes < 0) return "\u2014"
+        val kb = bytes / 1024.0
+        val loc = java.util.Locale.US
+        return when {
+            kb < 1024.0 -> String.format(loc, "%.0f KB", kb)
+            kb < 1024.0 * 1024.0 -> (kb / 1024.0).let { if (it >= 100) String.format(loc, "%.0f MB", it) else String.format(loc, "%.1f MB", it) }
+            else -> String.format(loc, "%.2f GB", kb / 1024.0 / 1024.0)
+        }
+    }
+
+    /** "Today: Wi-Fi 1.2 GB   SIM 340 MB" in English (for the app's first page). */
+    fun englishLine(value: Today): String = "Today: Wi-Fi " + english(value.wifi) + "   SIM " + english(value.mobile)
 }

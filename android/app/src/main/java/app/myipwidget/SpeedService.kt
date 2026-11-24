@@ -245,8 +245,9 @@ class SpeedService : Service() {
         }
     }
 
-    /** Without the speed there is no number to show in the status bar: the country sign (US) takes that place, and the flag lines join the main notification. */
-    private fun mergeFlag(): Boolean = !Prefs.showSpeedNotice(this) && Prefs.showFlagNotice(this) && codeCached().isNotEmpty()
+    /** One status-bar icon instead of two: the country code (US) and the speed share the app's small icon, and the flag lines join the main notification. */
+    private fun mergeFlag(): Boolean = Prefs.showFlagNotice(this) && codeCached().isNotEmpty()
+
 
     private fun describeCached(): Display {
         val cached = IpLookup.load(this)
@@ -384,7 +385,8 @@ class SpeedService : Service() {
 
         val builder = Notification.Builder(this, CHANNEL)
             .setSmallIcon(
-                if (speedOn) speedIcon(down + up)
+                if (speedOn && merged) speedIcon(down + up, codeCached())
+                else if (speedOn) speedIcon(down + up)
                 else if (merged) textIcon(codeCached())
                 else Icon.createWithResource(this, R.drawable.ic_stat),
             )
@@ -396,7 +398,6 @@ class SpeedService : Service() {
             .setWhen(startTime)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(open())
-        if (speedOn) builder.setLargeIcon(speedBadge(down + up))
         if (!compact && expanded.isNotEmpty()) {
             builder.setContentText(collapsed)
             val styled = android.text.SpannableString(expanded)
@@ -438,7 +439,7 @@ class SpeedService : Service() {
      * Download plus upload as one big number with a small unit under it (K or M). Below
      * [MIN_SPEED] it shows 0, so the icon does not flicker with tiny background traffic.
      */
-    private fun speedIcon(bytesPerSecond: Double): Icon {
+    private fun speedIcon(bytesPerSecond: Double, code: String = ""): Icon {
         val kb = if (bytesPerSecond < MIN_SPEED) 0.0 else bytesPerSecond / 1024.0
         val number: String
         val unit: String
@@ -459,38 +460,26 @@ class SpeedService : Service() {
             textAlign = Paint.Align.CENTER
             textSize = 78f
         }
-        while (paint.measureText(number) > size - 2 && paint.textSize > 24f) paint.textSize -= 2f
-        canvas.drawText(number, size / 2f, 64f, paint)
-        paint.textSize = 32f
-        canvas.drawText(unit, size / 2f, 94f, paint)
+        if (code.isEmpty()) {
+            while (paint.measureText(number) > size - 2 && paint.textSize > 24f) paint.textSize -= 2f
+            canvas.drawText(number, size / 2f, 64f, paint)
+            paint.textSize = 32f
+            canvas.drawText(unit, size / 2f, 94f, paint)
+        } else {
+            // two lines: the country code above, the speed (number and unit) below
+            val label = code.uppercase().take(3)
+            paint.textSize = 40f
+            while (paint.measureText(label) > size - 2 && paint.textSize > 20f) paint.textSize -= 2f
+            canvas.drawText(label, size / 2f, 38f, paint)
+            val speed = number + unit
+            paint.textSize = 54f
+            while (paint.measureText(speed) > size - 2 && paint.textSize > 20f) paint.textSize -= 2f
+            canvas.drawText(speed, size / 2f, 90f, paint)
+        }
         return Icon.createWithBitmap(bitmap)
     }
 
     /** White text on a transparent square: the system tints it to match the status bar. */
-    /** The round picture at the left of the notification: the speed as a number with its unit, on a blue (K) or green (M) disc. */
-    private fun speedBadge(bytesPerSecond: Double): Icon {
-        val total = if (bytesPerSecond < MIN_SPEED) 0.0 else bytesPerSecond
-        val mega = total >= 1024.0 * 1024.0
-        val number = if (mega) java.util.Locale.US.let { String.format(it, "%.1f", total / 1048576.0) } else (total / 1024.0).toInt().toString()
-        val unit = if (mega) "MB/s" else "KB/s"
-        val size = 128
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (mega) 0xFF2E9E6B.toInt() else 0xFF1E6FD9.toInt() }
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f, disc)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            typeface = Typeface.DEFAULT_BOLD
-            textAlign = Paint.Align.CENTER
-            textSize = 62f
-        }
-        while (paint.measureText(number) > size - 28 && paint.textSize > 20f) paint.textSize -= 2f
-        canvas.drawText(number, size / 2f, 70f, paint)
-        paint.textSize = 26f
-        canvas.drawText(unit, size / 2f, 104f, paint)
-        return Icon.createWithBitmap(bitmap)
-    }
-
     private fun textIcon(text: String): Icon {
         val size = 96
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
