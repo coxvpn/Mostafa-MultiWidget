@@ -172,8 +172,28 @@ object IpLookup {
             .putString("code", info.code)
             .putString("city", info.city)
             .putString("isp", info.isp)
+            .putBoolean("failed", false)
             .apply()
     }
+
+    /** The last lookup found nothing (no connection, or no service answered). */
+    fun markFailed(context: Context) {
+        context.getSharedPreferences("cache", Context.MODE_PRIVATE).edit().putBoolean("failed", true).apply()
+    }
+
+    /** No connection, or the last lookup failed: the saved country must not be shown as if it were current. */
+    fun isOffline(context: Context): Boolean =
+        !NetWatch.isOnline(context) || context.getSharedPreferences("cache", Context.MODE_PRIVATE).getBoolean("failed", false)
+
+    /** What the widget, the app and the notification show before a new lookup answers. */
+    fun cachedDisplay(context: Context): Display {
+        if (isOffline(context)) return offline(context)
+        val cached = load(context)
+        return if (cached != null) describe(context, cached) else checking(context)
+    }
+
+    /** The country code for the status-bar icon; two dashes while offline. */
+    fun cachedCode(context: Context): String = if (isOffline(context)) "--" else (load(context)?.code ?: "")
 
     fun load(context: Context): IpInfo? {
         val p = context.getSharedPreferences("cache", Context.MODE_PRIVATE)

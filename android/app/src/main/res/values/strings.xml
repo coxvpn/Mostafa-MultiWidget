@@ -77,6 +77,8 @@
         <item>طرح اصلی</item>
         <item>طرح اول</item>
         <item>طرح دوم</item>
+        <item>طرح سوم</item>
+        <item>طرح چهارم</item>
     </string-array>
     <string name="theme_title">Widget background</string>
     <string name="theme_button">Background: %1$s</string>
@@ -173,6 +175,8 @@
     <string name="charge_unknown">The phone does not tell the charging current</string>
     <string name="charge_voltage">Voltage: %1$s V</string>
     <string name="charge_left">Time to full: %1$d h %2$d min</string>
+    <string name="charge_left_min">Time to full: %1$d min</string>
+    <string name="charge_left_hours">Time to full: %1$d h</string>
     <string name="charge_full">🔋 Fully charged · %1$d%%</string>
     <string name="charge_off">🔋 Not charging · battery %1$d%%</string>
     <string name="charge_temp">Battery temperature: %1$s °C</string>
@@ -181,6 +185,7 @@
     <string name="charge_wireless">wireless</string>
     <string name="clock_opt_ip">Show the flag and IP address</string>
     <string name="clock_opt_clock">Show the clock instead</string>
+    <string name="update_changes">What\'s new:</string>
     <string name="update_install">Download and install</string>
     <string name="update_downloading">Downloading… %1$d%%</string>
     <string name="update_allow_install">Allow this app to install apps on the next page, then tap the update button again.</string>

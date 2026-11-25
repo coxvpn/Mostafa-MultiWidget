@@ -56,8 +56,8 @@ object Prefs {
     /** Background style of the widget: 0 follows the phone (light / dark), then dark, light, glass, blue, green. */
     fun theme(context: Context) = prefs(context).getInt("theme", 0).coerceIn(0, 5)
 
-    /** 0 = the original layout, 1..2 = the coloured tile layouts (first, second). */
-    fun layout(context: Context): Int = prefs(context).getInt("layout", 0).let { if (it in 0..2) it else 0 }
+    /** 0 = the original layout, 1..2 = the coloured tile layouts (first, second), 3..4 = the glass layouts (third, fourth). */
+    fun layout(context: Context): Int = prefs(context).getInt("layout", 0).let { if (it in 0..4) it else 0 }
 
     fun setLayout(context: Context, value: Int) {
         prefs(context).edit().putInt("layout", value).apply()

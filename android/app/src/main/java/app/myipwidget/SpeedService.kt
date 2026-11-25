@@ -249,12 +249,9 @@ class SpeedService : Service() {
     private fun mergeFlag(): Boolean = Prefs.showFlagNotice(this) && codeCached().isNotEmpty()
 
 
-    private fun describeCached(): Display {
-        val cached = IpLookup.load(this)
-        return if (cached != null) IpLookup.describe(this, cached) else IpLookup.checking(this)
-    }
+    private fun describeCached(): Display = IpLookup.cachedDisplay(this)
 
-    private fun codeCached(): String = IpLookup.load(this)?.code ?: ""
+    private fun codeCached(): String = IpLookup.cachedCode(this)
 
     private fun open(): PendingIntent = PendingIntent.getActivity(
         this, 7, Intent(this, MainActivity::class.java),

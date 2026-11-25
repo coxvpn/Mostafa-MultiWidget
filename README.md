@@ -47,8 +47,11 @@
 - پرچم، آی‌پی و (اختیاری) شهر و ارائه‌دهنده‌ی اینترنت.
 - در سینی سیستم می‌نشیند: با زدن روی آیکون، یک پنجره‌ی کوچک کنار نوار وظیفه باز می‌شود و با کلیک بیرون از آن بسته می‌شود.
 - سرعت دانلود و آپلود لحظه‌ای (با فیلترشکن، ترافیک یک بار شمرده می‌شود).
-- دمای هوا برای شهر دلخواه (داده از Open-Meteo)، و حجم دانلود و آپلود امروز.
-- سرعت، حجم و هوا هرکدام از منوی راست‌کلیک قابل خاموش شدن هستند.
+- دمای هوا (داده از Open-Meteo)، و حجم دانلود و آپلود امروز. تا وقتی شهری انتخاب نکرده باشید، شهر خودکار از روی آی‌پی تشخیص داده می‌شود؛ با فیلترشکن روشن، مکان فیلترشکن نشان داده می‌شود و از منو می‌توانید «تشخیص شهر» را بدون فیلترشکن دوباره بزنید.
+- نرخ دلار (تومان) کنار سرعت، حجم و دما.
+- آخرین نرخ دلار ذخیره می‌شود تا بعد از باز کردن دوباره‌ی برنامه نوار خالی نماند (تا دو روز). اگر منبع اصلی باز نشد، می‌توان یک سرویس دوم را با گذاشتن کلید آن در `rate_api_key` داخل فایل `%APPDATA%\\MyIPWidget\\settings.json` به‌عنوان پشتیبان فعال کرد (سرویس دوم رایگان نیست).
+- نوار کوچک کنار ساعت (داخل نوار وظیفه) با سرعت دانلود و آپلود، حجم امروز، دما و دلار. بعد از نصب خودکار اجرا می‌شود و گزینه‌ی «اجرا با ویندوز» به‌صورت پیش‌فرض تیک‌دار است.
+- سرعت، حجم، هوا و دلار هرکدام از منوی راست‌کلیک قابل خاموش شدن هستند.
 - بدون اینترنت، کره‌ی زمین با خط قرمز نشان داده می‌شود.
 - منوی راست‌کلیک: کپی آی‌پی، به‌روزرسانی، شفافیت، ماندن روی دسکتاپ، اجرا با ویندوز، خروج.
 - با دو بار کلیک روی ویجت، آی‌پی کپی می‌شود.
@@ -117,8 +120,11 @@ Requires Android 8 or newer.
 - Flag, IP address and (optionally) city and provider.
 - Lives in the system tray: click the tray icon and a small pop-up opens beside the taskbar; it closes when you click elsewhere.
 - Live download and upload speed (with a VPN the traffic is counted once).
-- Weather for a city you choose (data from Open-Meteo), and today's downloaded and uploaded volume.
-- Speed, volume and weather can each be switched off from the right-click menu.
+- Weather (data from Open-Meteo) and today's downloaded and uploaded volume. While no city is chosen, the city is found automatically from the IP; with a VPN on it shows the VPN's place, so use the "detect city" menu item again with the VPN off.
+- The dollar rate (Toman) beside speed, volume and temperature.
+- The last dollar rate is saved, so the bar is not empty after a restart (up to two days). If the main source cannot be read, a second service can be used as a backup by putting its key in `rate_api_key` in `%APPDATA%\\MyIPWidget\\settings.json` (that service is not free).
+- A small bar beside the clock (built into the taskbar) with download/upload speed, today's volume, temperature and dollar. It starts by itself at the end of the setup, and "start with Windows" is ticked by default.
+- Speed, volume, weather and dollar can each be switched off from the right-click menu.
 - A globe with a red slash shows when there is no internet.
 - Right-click menu: copy IP, refresh, opacity, keep on desktop, start with Windows, quit.
 - Double-click the widget to copy the IP.

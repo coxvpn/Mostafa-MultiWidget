@@ -49,7 +49,18 @@ object Rate {
         if (p.contains("digits") && age in 0..maxAgeMs) return
         val body = IpLookup.httpGet(URL, 600_000) ?: return
         val digits = parse(body) ?: return
-        p.edit().putString("digits", digits).putLong("time", System.currentTimeMillis()).apply()
+        val before = p.getString("digits", null)
+        val edit = p.edit().putString("digits", digits).putLong("time", System.currentTimeMillis())
+        if (before != null && before != digits) edit.putString("prev", before)   // the arrow compares with this
+        edit.apply()
+    }
+
+    /** 1 when the last change was a rise, -1 a fall, 0 when no change has been seen yet. */
+    fun trend(context: Context): Int {
+        val p = prefs(context)
+        val now = p.getString("digits", null)?.toLongOrNull() ?: return 0
+        val before = p.getString("prev", null)?.toLongOrNull() ?: return 0
+        return now.compareTo(before).coerceIn(-1, 1)
     }
 
     /** "$ 98,500" */

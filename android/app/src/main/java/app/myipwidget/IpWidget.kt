@@ -77,7 +77,7 @@ class IpWidget : AppWidgetProvider() {
             R.drawable.aqi_bg_0, R.drawable.aqi_bg_1, R.drawable.aqi_bg_2, R.drawable.aqi_bg_3, R.drawable.aqi_bg_4, R.drawable.aqi_bg_5,
         )
         private val LAYOUTS = intArrayOf(
-            R.layout.widget, R.layout.widget_l1, R.layout.widget_l2,
+            R.layout.widget, R.layout.widget_l1, R.layout.widget_l2, R.layout.widget_l3, R.layout.widget_l4,
         )
         private const val BUTTON_WEATHER_AGE_MS = 2 * 60 * 1000L
 
@@ -98,8 +98,7 @@ class IpWidget : AppWidgetProvider() {
         }
 
         fun describeCached(context: Context): Display {
-            val cached = IpLookup.load(context)
-            return if (cached != null) IpLookup.describe(context, cached) else IpLookup.checking(context)
+            return IpLookup.cachedDisplay(context)
         }
 
         /** Draws the widget again from what is saved (after a setting changed). */
@@ -137,7 +136,7 @@ class IpWidget : AppWidgetProvider() {
                 try {
                     val info = if (NetWatch.isOnline(app)) IpLookup.fetch() else null
                     // a newer refresh may have started meanwhile; only the newest one may save and draw
-                    if (info != null && mine == latest.get()) IpLookup.save(app, info)
+                    if (mine == latest.get()) { if (info != null) IpLookup.save(app, info) else IpLookup.markFailed(app) }
                     if (mine == latest.get()) {
                         render(app, if (info != null) IpLookup.describe(app, info) else IpLookup.offline(app), busy = true)
                     }
@@ -219,6 +218,8 @@ class IpWidget : AppWidgetProvider() {
         fun build(context: Context, display: Display, busy: Boolean, layout: Int): RemoteViews {
             val views = RemoteViews(context.packageName, LAYOUTS[layout])
             val styled = layout != 0   // the coloured tile layouts have their own colours
+            val glass = layout >= 3    // the third and fourth layouts: glass tiles, icons and the dollar arrow
+            val plainWeather = layout == 4   // the fourth layout has no coloured tile behind the weather
             val clock = Prefs.showClock(context)
             // the IP number and the carrier text are only in the app: the widget has the flag and the country
             views.setViewVisibility(R.id.ip, View.GONE)
@@ -253,7 +254,7 @@ class IpWidget : AppWidgetProvider() {
                     if (weather == null) "" else if (night && code == 0) "\uD83C\uDF19" else Weather.symbol(code),
                 )
                 // the tile's colour follows the weather
-                views.setInt(R.id.weather_box, "setBackgroundResource", skyTile(code, night))
+                if (!plainWeather) views.setInt(R.id.weather_box, "setBackgroundResource", skyTile(code, night))
                 views.setTextViewText(R.id.weather, if (weather != null) Math.round(weather.temp).toString() + "\u00B0" else "\u2026")
             } else {
                 views.setTextViewText(R.id.weather, if (weather != null) Weather.format(weather) else "\u2026")
@@ -271,7 +272,7 @@ class IpWidget : AppWidgetProvider() {
             if (showWeather && Prefs.showAqi(context) && aqi >= 0) {
                 val level = Weather.aqiLevel(aqi)
                 views.setViewVisibility(R.id.aqi, View.VISIBLE)
-                views.setTextViewText(R.id.aqi, "AQI $aqi")
+                views.setTextViewText(R.id.aqi, if (glass) "AQI: $aqi" else "AQI $aqi")
                 views.setInt(R.id.aqi, "setBackgroundResource", AQI_BACKGROUNDS[level])
                 views.setTextColor(R.id.aqi, if (level == 1 || level == 2) 0xFF222222.toInt() else 0xFFFFFFFF.toInt())
             } else {
@@ -290,7 +291,7 @@ class IpWidget : AppWidgetProvider() {
                 views.setTextViewText(
                     R.id.prayer_label,
                     context.getString(
-                        if (styled) R.string.widget_azan_full else R.string.widget_azan_prefix,
+                        if (styled && !glass) R.string.widget_azan_full else R.string.widget_azan_prefix,
                         context.getString(azan.nameRes),
                     ),
                 )
@@ -313,12 +314,27 @@ class IpWidget : AppWidgetProvider() {
             }
 
             // bottom row: three cells, each with a small label and a big value
-            views.setTextViewText(R.id.lbl_rate, (if (styled) "\uD83D\uDCB5 " else "") + context.getString(R.string.widget_rate_label))
+            views.setTextViewText(R.id.lbl_rate, (if (styled && !glass) "\uD83D\uDCB5 " else "") + context.getString(R.string.widget_rate_label))
             views.setTextViewText(R.id.lbl_wifi, context.getString(R.string.widget_wifi_label))
             views.setTextViewText(R.id.lbl_sim, context.getString(R.string.widget_sim_label))
-            views.setTextViewText(R.id.rate, Rate.format(Rate.cached(context)))
-            views.setTextViewText(R.id.wifi, (if (styled) "Wi-Fi " else "") + Usage.wifiValue(context, today))
-            views.setTextViewText(R.id.sim, (if (styled) "SIM " else "") + Usage.simValue(context, today))
+            // an arrow shows the last change of the rate: up (pale red) or down (pale green); no arrow before the first change
+            val trend = Rate.trend(context)
+            val arrow = when (trend) { 1 -> "\u25B2 "; -1 -> "\u25BC "; else -> "" }
+            views.setTextViewText(R.id.rate, arrow + Rate.format(Rate.cached(context)))
+            val cellBackground = when {
+                glass -> when (trend) { 1 -> R.drawable.tile_rate_red; -1 -> R.drawable.tile_rate_green; else -> R.drawable.tile_rate_flat }
+                layout == 0 -> when (trend) { 1 -> R.drawable.rate_bg_red; -1 -> R.drawable.rate_bg_green; else -> R.drawable.rate_bg }
+                else -> 0   // the first and second layouts keep their own dollar tile
+            }
+            if (cellBackground != 0) views.setInt(R.id.cell_rate, "setBackgroundResource", cellBackground)
+            if (layout == 0 && trend != 0) {
+                // the pale cell needs dark text of its own colour (the plain layout also sits on light backgrounds)
+                val ink = if (trend == 1) 0xFFB3261E.toInt() else 0xFF1B7A43.toInt()
+                views.setTextColor(R.id.rate, ink)
+                views.setTextColor(R.id.lbl_rate, ink)
+            }
+            views.setTextViewText(R.id.wifi, (if (glass) "Wi-Fi: " else if (styled) "Wi-Fi " else "") + Usage.wifiValue(context, today))
+            views.setTextViewText(R.id.sim, (if (glass) "SIM: " else if (styled) "SIM " else "") + Usage.simValue(context, today))
             views.setViewVisibility(R.id.usage_box, if (showUsage) View.VISIBLE else View.GONE)
             views.setViewVisibility(R.id.cell_rate, if (showRate) View.VISIBLE else View.GONE)
             views.setViewVisibility(R.id.cell_wifi, if (showUsage) View.VISIBLE else View.GONE)

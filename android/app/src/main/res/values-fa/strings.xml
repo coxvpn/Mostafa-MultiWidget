@@ -75,6 +75,8 @@
         <item>طرح اصلی</item>
         <item>طرح اول</item>
         <item>طرح دوم</item>
+        <item>طرح سوم</item>
+        <item>طرح چهارم</item>
     </string-array>
     <string name="theme_title">پس‌زمینه‌ی ویجت</string>
     <string name="theme_button">پس‌زمینه: %1$s</string>
@@ -171,6 +173,8 @@
     <string name="charge_unknown">گوشی جریان شارژ را نشان نمی‌دهد</string>
     <string name="charge_voltage">ولتاژ: %1$s ولت</string>
     <string name="charge_left">مانده تا پر شدن: %1$d ساعت و %2$d دقیقه</string>
+    <string name="charge_left_min">مانده تا پر شدن: %1$d دقیقه</string>
+    <string name="charge_left_hours">مانده تا پر شدن: %1$d ساعت</string>
     <string name="charge_full">🔋 کاملاً شارژ شده · %1$d%%</string>
     <string name="charge_off">🔋 به شارژر وصل نیست · باتری %1$d%%</string>
     <string name="charge_temp">دمای باتری: %1$s درجه</string>
@@ -179,6 +183,7 @@
     <string name="charge_wireless">بی‌سیم</string>
     <string name="clock_opt_ip">نمایش پرچم و آی‌پی</string>
     <string name="clock_opt_clock">نمایش ساعت به‌جای آی‌پی</string>
+    <string name="update_changes">تغییرات این نسخه:</string>
     <string name="update_install">دانلود و نصب</string>
     <string name="update_downloading">در حال دانلود… %1$d%%</string>
     <string name="update_allow_install">در صفحه‌ی بعد به این برنامه اجازه‌ی نصب برنامه‌ها را بدهید، بعد دوباره دکمه‌ی به‌روزرسانی را بزنید.</string>

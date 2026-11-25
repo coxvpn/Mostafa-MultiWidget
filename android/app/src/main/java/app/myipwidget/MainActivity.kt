@@ -301,8 +301,7 @@ class MainActivity : Activity() {
             }
         }
 
-        val cached = IpLookup.load(this)
-        show(if (cached != null) IpLookup.describe(this, cached) else IpLookup.checking(this))
+        show(IpLookup.cachedDisplay(this))
         showExtras()
         refresh()
         findViewById<Button>(R.id.battery).setOnClickListener { requestUnrestricted() }
@@ -574,7 +573,13 @@ class MainActivity : Activity() {
             }
             if (info.millivolts > 0) lines.add(getString(R.string.charge_voltage, String.format(java.util.Locale.US, "%.2f", info.millivolts / 1000.0)))
             if (info.minutesLeft > 0) {
-                lines.add(getString(R.string.charge_left, info.minutesLeft / 60, info.minutesLeft % 60))
+                val h = info.minutesLeft / 60
+                val m = info.minutesLeft % 60
+                lines.add(when {
+                    h == 0 -> getString(R.string.charge_left_min, m)
+                    m == 0 -> getString(R.string.charge_left_hours, h)
+                    else -> getString(R.string.charge_left, h, m)
+                })
             }
         } else if (info.full && info.source != 0) {
             lines.add(getString(R.string.charge_full, info.level))
@@ -845,6 +850,13 @@ class MainActivity : Activity() {
         } else {
             tile.visibility = View.GONE
         }
+        // the date sits level with the temperature; with no weather tile it goes back to the top
+        findViewById<View>(R.id.tile_date).let { d ->
+            (d.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+                val top = if (tile.visibility == View.VISIBLE) dp(40) else 0
+                if (lp.topMargin != top) { lp.topMargin = top; d.layoutParams = lp }
+            }
+        }
 
         cityName.text = if (Prefs.hasCity(this)) Prefs.cityName(this) else getString(R.string.no_city)
 
@@ -881,7 +893,7 @@ class MainActivity : Activity() {
         refreshButton.isEnabled = false
         Thread {
             val info = if (NetWatch.isOnline(app)) IpLookup.fetch() else null
-            if (info != null) IpLookup.save(app, info)
+            if (info != null) IpLookup.save(app, info) else IpLookup.markFailed(app)
             val display = if (info != null) IpLookup.describe(app, info) else IpLookup.offline(app)
             runOnUiThread {
                 if (!isFinishing) {
@@ -1128,7 +1140,7 @@ class MainActivity : Activity() {
         lookForUpdate(manual = true)
     }
 
-    private class Latest(val tag: String, val page: String, val apkUrl: String)
+    private class Latest(val tag: String, val page: String, val apkUrl: String, val notes: String)
 
     private fun mineVersion(): String =
         try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
@@ -1152,7 +1164,7 @@ class MainActivity : Activity() {
                             if (a.optString("name", "").endsWith(".apk")) { apk = a.optString("browser_download_url", ""); break }
                         }
                     }
-                    latest = Latest(o.optString("tag_name", ""), o.optString("html_url", ""), apk)
+                    latest = Latest(o.optString("tag_name", ""), o.optString("html_url", ""), apk, plainNotes(o.optString("body", "")))
                 }
             } catch (e: Exception) {
                 // no answer
@@ -1174,6 +1186,21 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    /** The release text from GitHub (Markdown) as plain lines: no #, **, or `; "- " becomes a bullet; no title line. */
+    private fun plainNotes(markdown: String): String {
+        val out = ArrayList<String>()
+        for (raw in markdown.replace("\r", "").lines()) {
+            var line = raw.trim()
+            if (line.startsWith("## ")) continue
+            line = line.trimStart('#').trim().replace("**", "").replace("`", "")
+            if (line.startsWith("- ") || line.startsWith("* ")) line = "\u2022 " + line.substring(2)
+            out.add(line)
+        }
+        var text = out.joinToString("\n").replace(Regex("\n{3,}"), "\n\n").trim()
+        if (text.length > 3000) text = text.substring(0, 3000).trimEnd() + "\u2026"
+        return text
+    }
+
     /** A thin line at the top: "a new version is out". It never asks for anything; a tap opens the choices. */
     private fun showUpdateBanner(latest: Latest, mine: String) {
         findViewById<TextView>(R.id.update_banner).apply {
@@ -1186,7 +1213,8 @@ class MainActivity : Activity() {
     private fun showUpdateDialog(latest: Latest, mine: String) {
         AlertDialog.Builder(this)
             .setTitle(R.string.update_title)
-            .setMessage(getString(R.string.update_found, latest.tag.trimStart('v', 'V'), mine))
+            .setMessage(getString(R.string.update_found, latest.tag.trimStart('v', 'V'), mine) +
+                (if (latest.notes.isNotEmpty()) "\n\n" + getString(R.string.update_changes) + "\n" + latest.notes else ""))
             .setPositiveButton(if (latest.apkUrl.isNotEmpty()) R.string.update_install else R.string.update_open) { _, _ ->
                 if (latest.apkUrl.isNotEmpty()) downloadAndInstall(latest.apkUrl) else openPage(latest.page)
             }
