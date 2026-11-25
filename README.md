@@ -1,4 +1,4 @@
-# Mostafa MultiWidget
+# َAndroid MultiWidget
 
 [فارسی](#فارسی) · [English](#english)
 
