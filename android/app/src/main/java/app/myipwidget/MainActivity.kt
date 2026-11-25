@@ -76,6 +76,8 @@ class MainActivity : Activity() {
 
         refreshButton = findViewById(R.id.refresh)
         refreshButton.setOnClickListener { refresh() }
+        findViewById<View>(R.id.card_rate).setOnClickListener { DetailDialogs.showRate(this) }
+        findViewById<View>(R.id.tile_weather).setOnClickListener { DetailDialogs.showForecast(this) }
         ipView.setOnClickListener { copyIp() }
 
         checkWeather.isChecked = Prefs.showWeather(this)
@@ -213,11 +215,16 @@ class MainActivity : Activity() {
         val settingsPage = findViewById<View>(R.id.settings_page)
         val menu = findViewById<TextView>(R.id.menu_button)
         val title = findViewById<TextView>(R.id.page_title)
+        val subtitle = findViewById<TextView>(R.id.page_subtitle)
+        val updateBox = findViewById<View>(R.id.update_box)
         fun showSettings(on: Boolean) {
             settingsPage.visibility = if (on) View.VISIBLE else View.GONE
             dataPage.visibility = if (on) View.GONE else View.VISIBLE
             menu.text = if (on) "\u2715" else "\u2630"
             title.text = getString(if (on) R.string.settings_title else R.string.app_name)
+            title.gravity = if (on) android.view.Gravity.END else android.view.Gravity.START
+            subtitle.visibility = if (on) View.VISIBLE else View.GONE
+            updateBox.visibility = if (on) View.GONE else View.VISIBLE
         }
         menu.setOnClickListener { showSettings(settingsPage.visibility != View.VISIBLE) }
         backToData = { if (settingsPage.visibility == View.VISIBLE) { showSettings(false); true } else false }
@@ -558,8 +565,10 @@ class MainActivity : Activity() {
     private fun showCharge() {
         val box = findViewById<TextView>(R.id.charge_now)
         val info = ChargeInfo.read(this)
-        if (info == null) { box.visibility = View.GONE; return }
+        val card = findViewById<View>(R.id.card_battery)
+        if (info == null) { box.visibility = View.GONE; card.visibility = View.GONE; return }
         box.visibility = View.VISIBLE
+        card.visibility = View.VISIBLE
         val lines = ArrayList<String>()
         val temp = String.format(java.util.Locale.US, "%.1f", info.tempTenths / 10.0)
         if (info.charging) {
@@ -658,17 +667,85 @@ class MainActivity : Activity() {
         }
     }
 
-    /** The five apps that used the most data today (needs the usage access). */
+    /** The five apps that used the most data today (needs the usage access): icon, name, a bar and the size. */
     private fun loadTopApps() {
-        val box = findViewById<TextView>(R.id.top_apps)
+        val box = findViewById<LinearLayout>(R.id.top_apps)
         Thread {
             val list = Usage.topApps(applicationContext, 5)
+            val icons = list.map { app ->
+                try { app.pkg?.let { packageManager.getApplicationIcon(it) } } catch (e: Exception) { null }
+            }
             runOnUiThread {
                 if (isFinishing) return@runOnUiThread
-                box.text = if (list.isEmpty()) getString(R.string.top_apps_none)
-                else list.joinToString("\n") { "\u2068" + it.first + "\u2069  \u00B7  " + Formatter.formatShortFileSize(applicationContext, it.second) }
+                box.removeAllViews()
+                if (list.isEmpty()) {
+                    box.addView(TextView(this).apply { text = getString(R.string.top_apps_none); textSize = 14f })
+                    return@runOnUiThread
+                }
+                val biggest = list.maxOf { it.bytes }.coerceAtLeast(1L)
+                val match = LinearLayout.LayoutParams.MATCH_PARENT
+                val wrap = LinearLayout.LayoutParams.WRAP_CONTENT
+                for ((i, app) in list.withIndex()) {
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        layoutDirection = View.LAYOUT_DIRECTION_LTR
+                        setPadding(0, dp(5), 0, dp(5))
+                    }
+                    row.addView(android.widget.ImageView(this).apply { setImageDrawable(icons[i]) }, LinearLayout.LayoutParams(dp(28), dp(28)))
+                    row.addView(
+                        TextView(this).apply {
+                            text = app.name
+                            textSize = 14f
+                            maxLines = 1
+                            ellipsize = android.text.TextUtils.TruncateAt.END
+                            setPadding(dp(10), 0, dp(8), 0)
+                        },
+                        LinearLayout.LayoutParams(0, wrap, 1.1f),
+                    )
+                    val bar = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setBackgroundResource(R.drawable.bar_track)
+                    }
+                    val share = (app.bytes * 100 / biggest).toInt().coerceIn(4, 100)
+                    bar.addView(View(this).apply { setBackgroundResource(R.drawable.bar_fill) }, LinearLayout.LayoutParams(0, match, share.toFloat()))
+                    bar.addView(View(this), LinearLayout.LayoutParams(0, match, (100 - share).toFloat()))
+                    row.addView(bar, LinearLayout.LayoutParams(0, dp(8), 1.2f))
+                    row.addView(
+                        TextView(this).apply {
+                            text = Formatter.formatShortFileSize(applicationContext, app.bytes)
+                            textSize = 13f
+                            gravity = Gravity.END
+                            minWidth = dp(60)
+                            setPadding(dp(8), 0, 0, 0)
+                        },
+                        LinearLayout.LayoutParams(wrap, wrap),
+                    )
+                    val pkg = app.pkg
+                    if (pkg != null) {
+                        val ripple = android.util.TypedValue()
+                        theme.resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)
+                        row.setBackgroundResource(ripple.resourceId)
+                        row.setOnClickListener { openAppData(pkg) }
+                    }
+                    box.addView(row)
+                }
             }
         }.start()
+    }
+
+    /** The data page of one app: the closest page Android offers, else the app's own settings page. */
+    private fun openAppData(pkg: String) {
+        val uri = android.net.Uri.parse("package:" + pkg)
+        try {
+            startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, uri))
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
+            } catch (e2: Exception) {
+                // no settings page to open
+            }
+        }
     }
 
     private fun loadChart() {
@@ -797,8 +874,19 @@ class MainActivity : Activity() {
     /** Fills in the weather, today's volume, the city name and the permission button from what is saved. */
     private fun showExtras() {
         val rateView = findViewById<TextView>(R.id.rate_now)
-        rateView.text = getString(R.string.rate_line, Rate.format(Rate.cached(this)))
-        rateView.visibility = if (Prefs.showRate(this)) View.VISIBLE else View.GONE
+        rateView.text = Rate.format(Rate.cached(this))
+        findViewById<View>(R.id.card_rate).visibility = if (Prefs.showRate(this)) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.rate_trend).apply {
+            val change = Rate.changePercent(this@MainActivity)
+            if (change == null || change == 0.0) {
+                visibility = View.GONE
+            } else {
+                visibility = View.VISIBLE
+                // a rise is red, a fall is green
+                text = (if (change > 0) "\u25B2 " else "\u25BC ") + String.format(java.util.Locale.US, "%.2f%%", Math.abs(change))
+                setTextColor(if (change > 0) 0xFFE5484D.toInt() else 0xFF27AE60.toInt())
+            }
+        }
         val now = java.util.Calendar.getInstance()
         dateNow.text = PersianDate.full(now).substringBefore("\n")
         findViewById<TextView>(R.id.greg_now).text = PersianDate.gregorian(now)
@@ -816,13 +904,14 @@ class MainActivity : Activity() {
 
         // the prayer call that is next
         val azan = if (Prefs.showPrayer(this)) Prayer.next(this) else null
+        findViewById<View>(R.id.azan_divider).visibility = if (azan == null) View.GONE else View.VISIBLE
         findViewById<TextView>(R.id.azan_now).apply {
             if (azan == null) {
                 visibility = View.GONE
             } else {
                 visibility = View.VISIBLE
-                text = getString(R.string.azan_word) + " " + getString(azan.nameRes) + " " + Prayer.clockText(azan.time) + "\n" +
-                    Prayer.remainingText(azan.time - System.currentTimeMillis()) + " " + getString(R.string.azan_left)
+                text = getString(R.string.azan_word) + " " + getString(azan.nameRes) + " " + Prayer.clockText(azan.time) + " (" +
+                    Prayer.remainingText(azan.time - System.currentTimeMillis()) + " " + getString(R.string.azan_left) + ")"
             }
         }
 
@@ -850,14 +939,8 @@ class MainActivity : Activity() {
         } else {
             tile.visibility = View.GONE
         }
-        // the date sits level with the temperature; with no weather tile it goes back to the top
-        findViewById<View>(R.id.tile_date).let { d ->
-            (d.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
-                val top = if (tile.visibility == View.VISIBLE) dp(40) else 0
-                if (lp.topMargin != top) { lp.topMargin = top; d.layoutParams = lp }
-            }
-        }
 
+        updateAge()
         cityName.text = if (Prefs.hasCity(this)) Prefs.cityName(this) else getString(R.string.no_city)
 
         val hasAccess = Usage.hasAccess(this)
@@ -888,6 +971,16 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    private var lastUpdated = 0L
+
+    /** "Updated: just now" / "5 min ago" at the top of the first page. */
+    private fun updateAge() {
+        val view = findViewById<TextView>(R.id.update_age)
+        if (lastUpdated == 0L) { view.text = ""; return }
+        val minutes = ((System.currentTimeMillis() - lastUpdated) / 60000L).toInt()
+        view.text = getString(R.string.last_update, if (minutes < 1) getString(R.string.now_word) else getString(R.string.min_ago, minutes))
+    }
+
     private fun refresh() {
         val app = applicationContext
         refreshButton.isEnabled = false
@@ -899,6 +992,8 @@ class MainActivity : Activity() {
                 if (!isFinishing) {
                     show(display)
                     refreshButton.isEnabled = true
+                    lastUpdated = System.currentTimeMillis()
+                    updateAge()
                 }
             }
             IpWidget.render(app, display)
@@ -1247,10 +1342,8 @@ class MainActivity : Activity() {
     /** The first page shows the clock instead of the flag and IP when the clock is chosen. */
     private fun showClockMode() {
         val clock = Prefs.showClock(this)
-        for (id in intArrayOf(R.id.ip_row)) {
-            findViewById<View>(id).visibility = if (clock) View.GONE else View.VISIBLE
-        }
-        findViewById<View>(R.id.clock_main).visibility = if (clock) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.ip_card).visibility = if (clock) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.clock_main).visibility = View.VISIBLE
     }
 
     private fun openPage(page: String) {

@@ -217,4 +217,26 @@
     <string name="backup_bad">This file is not a backup.</string>
     <string name="azan_volume">Loudness of the "Allahu Akbar"</string>
     <string name="section_backup">Backup</string>
+    <string name="card_dollar">Dollar rate</string>
+    <string name="card_battery">Battery</string>
+    <string name="card_usage">Internet use • today</string>
+    <string name="last_update">Updated: %1$s</string>
+    <string name="now_word">just now</string>
+    <string name="min_ago">%1$d min ago</string>
+    <string name="st_show">🖼 Widget</string>
+    <string name="st_city">📍 Location</string>
+    <string name="st_notice">🔔 Notification bar (beside the clock)</string>
+    <string name="st_beep">⏰ Hourly beep</string>
+    <string name="st_azan">🕌 Prayer call and alerts</string>
+    <string name="st_perm">🔑 Permissions</string>
+    <string name="st_backup">📁 Backup and about</string>
+    <string name="detail_close">Close</string>
+    <string name="forecast_title">Weather forecast</string>
+    <string name="forecast_hourly">Next hours</string>
+    <string name="forecast_daily">Next 7 days</string>
+    <string name="forecast_loading">Loading…</string>
+    <string name="forecast_failed">The forecast could not be loaded. Check the internet and the city.</string>
+    <string name="rate_dialog_title">Dollar rate changes</string>
+    <string name="rate_dialog_note">From the latest posts of the rate channel (oldest to newest)</string>
+    <string name="rate_none">No data for the chart. Check the internet.</string>
 </resources>
