@@ -7,13 +7,6 @@ import java.util.Locale
 
 data class City(val name: String, val region: String, val country: String, val lat: Double, val lon: Double)
 
-class HourPoint(val label: String, val temp: Int, val code: Int)
-
-/** [weekday] is Calendar.DAY_OF_WEEK; [label] is month/day. */
-class DayPoint(val weekday: Int, val label: String, val code: Int, val max: Int, val min: Int)
-
-class Forecast(val hours: List<HourPoint>, val days: List<DayPoint>)
-
 /** [max] and [min] are today's highest and lowest temperature; [aqi] is the US air-quality index, or -1 when unknown. */
 data class WeatherInfo(val temp: Double, val code: Int, val max: Double, val min: Double, val aqi: Int)
 
@@ -84,57 +77,6 @@ object Weather {
     private fun isSnow(code: Int) = code in 71..77 || code in 85..86
 
     /** Rain or snow in the next three hours: (1 rain / 2 snow, hours from now), or null for none (or when it cannot be read). */
-    /** The next 24 hours and the next 7 days. Call from a background thread. */
-    fun fetchForecast(lat: Double, lon: Double): Forecast? {
-        val url = "https://api.open-meteo.com/v1/forecast?latitude=" + "%.4f".format(Locale.US, lat) +
-            "&longitude=" + "%.4f".format(Locale.US, lon) +
-            "&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min" +
-            "&forecast_days=7&timezone=auto"
-        val body = IpLookup.httpGet(url, 100_000) ?: return null
-        return try {
-            val json = JSONObject(body)
-            val offset = json.optLong("utc_offset_seconds", 0L) * 1000L
-            val utc = java.util.TimeZone.getTimeZone("UTC")
-            val hourly = json.getJSONObject("hourly")
-            val times = hourly.getJSONArray("time")
-            val temps = hourly.getJSONArray("temperature_2m")
-            val codes = hourly.getJSONArray("weather_code")
-            val hourFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US).apply { timeZone = utc }
-            val nowLocal = System.currentTimeMillis() + offset
-            val hours = ArrayList<HourPoint>()
-            for (i in 0 until times.length()) {
-                val t = times.getString(i)
-                val start = hourFormat.parse(t)?.time ?: continue
-                if (start + 60 * 60 * 1000L <= nowLocal) continue   // this hour is over
-                if (temps.isNull(i) || codes.isNull(i)) continue
-                hours.add(HourPoint(t.substring(11, 16), Math.round(temps.getDouble(i)).toInt(), codes.getInt(i)))
-                if (hours.size == 24) break
-            }
-            val daily = json.getJSONObject("daily")
-            val dTimes = daily.getJSONArray("time")
-            val dCodes = daily.getJSONArray("weather_code")
-            val dMax = daily.getJSONArray("temperature_2m_max")
-            val dMin = daily.getJSONArray("temperature_2m_min")
-            val dayFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = utc }
-            val days = ArrayList<DayPoint>()
-            for (i in 0 until dTimes.length()) {
-                val t = dTimes.getString(i)
-                val date = dayFormat.parse(t) ?: continue
-                if (dMax.isNull(i) || dMin.isNull(i) || dCodes.isNull(i)) continue
-                val cal = java.util.Calendar.getInstance(utc).apply { time = date }
-                days.add(
-                    DayPoint(
-                        cal.get(java.util.Calendar.DAY_OF_WEEK), t.substring(5).replace('-', '/'), dCodes.getInt(i),
-                        Math.round(dMax.getDouble(i)).toInt(), Math.round(dMin.getDouble(i)).toInt(),
-                    ),
-                )
-            }
-            if (hours.isEmpty() && days.isEmpty()) null else Forecast(hours, days)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     fun fetchPrecip(lat: Double, lon: Double): Pair<Int, Int>? {
         val url = "https://api.open-meteo.com/v1/forecast?latitude=" + "%.4f".format(Locale.US, lat) +
             "&longitude=" + "%.4f".format(Locale.US, lon) + "&hourly=weather_code&forecast_days=2&timezone=auto"

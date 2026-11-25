@@ -57,13 +57,7 @@ object Prefs {
     fun theme(context: Context) = prefs(context).getInt("theme", 0).coerceIn(0, 5)
 
     /** 0 = the original layout, 1..2 = the coloured tile layouts (first, second), 3..4 = the glass layouts (third, fourth). */
-    fun layout(context: Context): Int {
-        val p = prefs(context)
-        if (!p.getBoolean("layout_swapped", false)) {   // the main layout is a new design now: start with it once
-            p.edit().putInt("layout", 0).putBoolean("layout_swapped", true).apply()
-        }
-        return p.getInt("layout", 0).let { if (it in 0..4) it else 0 }
-    }
+    fun layout(context: Context): Int = prefs(context).getInt("layout", 0).let { if (it in 0..4) it else 0 }
 
     fun setLayout(context: Context, value: Int) {
         prefs(context).edit().putInt("layout", value).apply()
@@ -180,7 +174,7 @@ object Prefs {
         prefs(context).edit().putBoolean("show_aqi", value).apply()
     }
 
-    fun showPrayer(context: Context) = prefs(context).getBoolean("show_prayer", false)
+    fun showPrayer(context: Context) = prefs(context).getBoolean("show_prayer", true)
 
     fun setShowPrayer(context: Context, value: Boolean) {
         prefs(context).edit().putBoolean("show_prayer", value).apply()
@@ -211,7 +205,7 @@ object Prefs {
         prefs(context).edit().putBoolean("notice_usage", value).apply()
     }
 
-    fun noticePrayer(context: Context) = prefs(context).getBoolean("notice_prayer", false)
+    fun noticePrayer(context: Context) = prefs(context).getBoolean("notice_prayer", true)
 
     fun setNoticePrayer(context: Context, value: Boolean) {
         prefs(context).edit().putBoolean("notice_prayer", value).apply()
