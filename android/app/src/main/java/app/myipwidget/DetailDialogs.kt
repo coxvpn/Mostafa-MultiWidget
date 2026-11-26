@@ -27,12 +27,111 @@ object DetailDialogs {
         setPadding(dp(activity, 20), dp(activity, 8), dp(activity, 20), dp(activity, 4))
     }
 
-    private fun open(activity: Activity, title: String, body: LinearLayout): AlertDialog =
-        AlertDialog.Builder(activity)
+    private fun open(
+        activity: Activity, title: String, body: LinearLayout,
+        neutralText: String? = null, onNeutral: (() -> Unit)? = null,
+    ): AlertDialog {
+        val builder = AlertDialog.Builder(activity)
             .setTitle(title)
             .setView(ScrollView(activity).apply { addView(body) })
             .setPositiveButton(R.string.detail_close, null)
-            .show()
+        if (neutralText != null && onNeutral != null) builder.setNeutralButton(neutralText) { _, _ -> onNeutral() }
+        return builder.show()
+    }
+
+    // ------------------------------------------------------------ prices of currencies and gold
+    fun showPrices(activity: Activity) {
+        val body = page(activity)
+        val dialog = open(activity, activity.getString(R.string.prices_title), body, activity.getString(R.string.prices_chart_button)) { showRate(activity) }
+        fun render(p: Prices) {
+            body.removeAllViews()
+            if (p.isEmpty()) { body.addView(text(activity, activity.getString(R.string.prices_none), 14f)); return }
+            p.updated?.let { body.addView(text(activity, activity.getString(R.string.prices_updated, it), 12f, alpha = 0.7f)) }
+            for (group in p.groups) {
+                if (group.lines.isEmpty()) continue
+                body.addView(text(activity, activity.getString(group.titleRes), 15f, true).apply { setPadding(0, dp(activity, 14), 0, dp(activity, 4)) })
+                for (line in group.lines) {
+                    val row = LinearLayout(activity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(0, dp(activity, 5), 0, dp(activity, 5))
+                    }
+                    row.addView(text(activity, line.label, 14f), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.3f))
+                    row.addView(
+                        text(activity, line.value + (if (line.unit.isEmpty()) "" else " " + line.unit), 14f, true).apply { gravity = Gravity.END },
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
+                    )
+                    body.addView(row)
+                }
+            }
+        }
+        render(Rate.savedPrices(activity))
+        Thread {
+            val fresh = IpLookup.httpGet(Rate.URL, 600_000)?.let { Rate.prices(it) }
+            if (fresh != null && !fresh.isEmpty()) Rate.savePrices(activity.applicationContext, fresh)
+            activity.runOnUiThread {
+                if (activity.isFinishing || !dialog.isShowing) return@runOnUiThread
+                if (fresh != null && !fresh.isEmpty()) render(fresh)
+            }
+        }.start()
+    }
+
+    // ------------------------------------------------------------ the last 7 days of data use
+    fun showWeek(activity: Activity, onGrant: () -> Unit) {
+        val body = page(activity)
+        body.addView(text(activity, activity.getString(R.string.forecast_loading), 14f))
+        val dialog = open(activity, activity.getString(R.string.week_title), body)
+        Thread {
+            val days = Usage.history(activity.applicationContext, 7)
+            activity.runOnUiThread {
+                if (activity.isFinishing || !dialog.isShowing) return@runOnUiThread
+                body.removeAllViews()
+                if (days.isEmpty()) {
+                    body.addView(text(activity, activity.getString(R.string.usage_no_access), 14f))
+                    body.addView(android.widget.Button(activity).apply {
+                        text = activity.getString(R.string.week_grant)
+                        setOnClickListener { dialog.dismiss(); onGrant() }
+                    })
+                    return@runOnUiThread
+                }
+                fun size(bytes: Long) = if (bytes < 0L) "-" else android.text.format.Formatter.formatShortFileSize(activity, bytes)
+                fun cell(value: String, bold: Boolean = false, weight: Float = 1f) =
+                    text(activity, value, 12f, bold).apply { gravity = Gravity.END; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight) }
+                val names = activity.resources.getStringArray(R.array.day_short)
+                val head = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_LTR }
+                head.addView(text(activity, "", 12f), LinearLayout.LayoutParams(dp(activity, 96), LinearLayout.LayoutParams.WRAP_CONTENT))
+                head.addView(cell("Wi-Fi", true)); head.addView(cell("SIM", true)); head.addView(cell(activity.getString(R.string.week_total), true))
+                body.addView(head)
+                var wifiSum = 0L
+                var simSum = 0L
+                for (i in days.indices.reversed()) {           // today first
+                    val day = days[i]
+                    val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -(days.size - 1 - i)) }
+                    val wifi = maxOf(0L, day.wifi)
+                    val sim = maxOf(0L, day.mobile)
+                    wifiSum += wifi
+                    simSum += sim
+                    val row = LinearLayout(activity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        layoutDirection = View.LAYOUT_DIRECTION_LTR
+                        setPadding(0, dp(activity, 6), 0, dp(activity, 6))
+                    }
+                    val label = names[cal.get(java.util.Calendar.DAY_OF_WEEK) % 7] + "  " +
+                        String.format(Locale.US, "%02d/%02d", cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH))
+                    row.addView(text(activity, label, 12f, true), LinearLayout.LayoutParams(dp(activity, 96), LinearLayout.LayoutParams.WRAP_CONTENT))
+                    row.addView(cell(size(wifi))); row.addView(cell(size(sim))); row.addView(cell(size(wifi + sim), true))
+                    body.addView(row)
+                }
+                val sum = LinearLayout(activity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    layoutDirection = View.LAYOUT_DIRECTION_LTR
+                    setPadding(0, dp(activity, 10), 0, dp(activity, 4))
+                }
+                sum.addView(text(activity, activity.getString(R.string.week_total), 13f, true), LinearLayout.LayoutParams(dp(activity, 96), LinearLayout.LayoutParams.WRAP_CONTENT))
+                sum.addView(cell(size(wifiSum), true)); sum.addView(cell(size(simSum), true)); sum.addView(cell(size(wifiSum + simSum), true))
+                body.addView(sum)
+            }
+        }.start()
+    }
 
     // ------------------------------------------------------------ dollar
     fun showRate(activity: Activity) {

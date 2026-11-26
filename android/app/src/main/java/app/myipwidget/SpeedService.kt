@@ -294,7 +294,8 @@ class SpeedService : Service() {
     private fun ratePart(): String {
         if (!Prefs.noticeRate(this)) return ""
         val rate = Rate.cached(this) ?: return ""
-        return LRM + Rate.format(rate)
+        val arrow = when (Rate.trend(this)) { 1 -> "\u25B2 "; -1 -> "\u25BC "; else -> "" }
+        return LRM + arrow + Rate.format(rate)
     }
 
     private fun usagePart(): String {
@@ -392,7 +393,7 @@ class SpeedService : Service() {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
-            .setWhen(startTime)
+            .setWhen(System.currentTimeMillis())   // the newest one of its kind: Android ranks by this time
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(open())
         if (!compact && expanded.isNotEmpty()) {
@@ -421,7 +422,7 @@ class SpeedService : Service() {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setOnlyAlertOnce(true)
-            .setWhen(startTime)
+            .setWhen(System.currentTimeMillis())   // the newest one of its kind: Android ranks by this time
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(open())
         if (text.isNotEmpty()) {

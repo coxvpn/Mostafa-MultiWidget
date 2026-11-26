@@ -55,8 +55,10 @@ object Usage {
         return if (wifi < 0 && mobile < 0) null else Today(wifi, mobile)
     }
 
-    /** The apps that used the most data today: (name, bytes), biggest first. Call from a background thread. */
-    fun topApps(context: Context, count: Int = 5): List<Pair<String, Long>> {
+    class AppUse(val name: String, val bytes: Long, val pkg: String?)
+
+    /** The apps that used the most data today, biggest first. Call from a background thread. */
+    fun topApps(context: Context, count: Int = 5): List<AppUse> {
         if (!hasAccess(context)) return emptyList()
         val manager = context.getSystemService(NetworkStatsManager::class.java) ?: return emptyList()
         val midnight = Calendar.getInstance().apply {
@@ -79,18 +81,24 @@ object Usage {
         }
         val packages = context.packageManager
         val named = HashMap<String, Long>()
+        val packageOf = HashMap<String, String>()
         for ((uid, bytes) in perUid) {
             if (bytes <= 0L) continue
+            var pkg: String? = null
             val label = try {
                 val list = packages.getPackagesForUid(uid)
                 if (list.isNullOrEmpty()) context.getString(R.string.top_apps_system)
-                else packages.getApplicationLabel(packages.getApplicationInfo(list[0], 0)).toString()
+                else {
+                    pkg = list[0]
+                    packages.getApplicationLabel(packages.getApplicationInfo(list[0], 0)).toString()
+                }
             } catch (e: Exception) {
                 context.getString(R.string.top_apps_system)
             }
             named[label] = (named[label] ?: 0L) + bytes
+            if (pkg != null && !packageOf.containsKey(label)) packageOf[label] = pkg
         }
-        return named.entries.sortedByDescending { it.value }.take(count).map { Pair(it.key, it.value) }
+        return named.entries.sortedByDescending { it.value }.take(count).map { AppUse(it.key, it.value, packageOf[it.key]) }
     }
 
     /** The last [days] days (the oldest first, today last): Wi-Fi and SIM bytes of each. Call from a background thread. */

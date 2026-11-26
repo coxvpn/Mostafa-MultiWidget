@@ -77,7 +77,7 @@ class IpWidget : AppWidgetProvider() {
             R.drawable.aqi_bg_0, R.drawable.aqi_bg_1, R.drawable.aqi_bg_2, R.drawable.aqi_bg_3, R.drawable.aqi_bg_4, R.drawable.aqi_bg_5,
         )
         private val LAYOUTS = intArrayOf(
-            R.layout.widget, R.layout.widget_l1, R.layout.widget_l2, R.layout.widget_l3, R.layout.widget_l4,
+            R.layout.widget_l4, R.layout.widget_l1, R.layout.widget_l2, R.layout.widget_l3, R.layout.widget,
         )
         private const val BUTTON_WEATHER_AGE_MS = 2 * 60 * 1000L
 
@@ -170,6 +170,33 @@ class IpWidget : AppWidgetProvider() {
             else -> null   // 0: the layout's own colours, which follow the phone's light / dark mode
         }
 
+        /** The explicit background modes for the main and third layouts (mode 0 follows the phone through the layout's own colours). */
+        private fun applyGlassTheme(context: Context, views: RemoteViews, layout: Int) {
+            val look = look(Prefs.theme(context)) ?: return
+            val light = Prefs.theme(context) == 2
+            views.setInt(R.id.root, "setBackgroundResource", look.bg)
+            val texts = arrayListOf(R.id.clock, R.id.date, R.id.country, R.id.wifi, R.id.sim, R.id.rate, R.id.refresh)
+            if (layout == 0) texts.addAll(intArrayOf(R.id.sun, R.id.weather, R.id.city_label).toList())   // layout 3 keeps white text on its sky tile
+            for (id in texts) views.setTextColor(id, look.text)
+            for (id in intArrayOf(R.id.date2, R.id.lbl_rate, R.id.prayer_label)) views.setTextColor(id, look.dim)
+            views.setInt(R.id.prayer_time, "setTextColor", look.prayer)
+            if (layout == 0) {
+                views.setTextColor(R.id.temp_high, look.up)
+                views.setTextColor(R.id.temp_low, look.down)
+            }
+            val line = (look.text and 0x00FFFFFF) or 0x33000000
+            for (id in intArrayOf(R.id.divider_a, R.id.divider_b, R.id.divider_c)) views.setInt(id, "setBackgroundColor", line)
+            views.setInt(R.id.icon_wifi, "setColorFilter", look.text)
+            views.setInt(R.id.icon_sim, "setColorFilter", look.text)
+            views.setInt(R.id.refresh, "setBackgroundResource", look.button)
+            val chip = if (light) R.drawable.chip_on_light else R.drawable.chip_on_dark
+            if (layout == 3) {
+                views.setInt(R.id.info, "setBackgroundResource", chip)
+                views.setInt(R.id.prayer_row, "setBackgroundResource", chip)
+            }
+            if (Rate.trend(context) == 0) views.setInt(R.id.cell_rate, "setBackgroundResource", chip)
+        }
+
         private fun applyTheme(context: Context, views: RemoteViews) {
             val look = look(Prefs.theme(context)) ?: return
             views.setInt(R.id.root, "setBackgroundResource", look.bg)
@@ -217,21 +244,21 @@ class IpWidget : AppWidgetProvider() {
         /** The widget's views in the given layout; also used for the preview inside the app. */
         fun build(context: Context, display: Display, busy: Boolean, layout: Int): RemoteViews {
             val views = RemoteViews(context.packageName, LAYOUTS[layout])
-            val styled = layout != 0   // the coloured tile layouts have their own colours
-            val glass = layout >= 3    // the third and fourth layouts: glass tiles, icons and the dollar arrow
-            val plainWeather = layout == 4   // the fourth layout has no coloured tile behind the weather
+            val styled = layout != 4   // layout 4 is the plain one; the others have their own colours
+            val glass = layout == 0 || layout == 3   // the glass layouts: icons and the dollar arrow
+            val plainWeather = layout == 0   // the main layout has no coloured tile behind the weather
             val clock = Prefs.showClock(context)
             // the IP number and the carrier text are only in the app: the widget has the flag and the country
             views.setViewVisibility(R.id.ip, View.GONE)
             views.setViewVisibility(R.id.detail, View.GONE)
-            if (layout == 0) {
+            if (layout == 4) {
                 // the plain layout: the flag and country move into the clock's row, beside the clock
                 views.setViewVisibility(R.id.flag_row, if (clock) View.GONE else View.VISIBLE)
                 views.setViewVisibility(R.id.clock_row, if (clock) View.VISIBLE else View.GONE)
                 views.setTextViewText(R.id.flag2, display.flag)
                 views.setTextViewText(R.id.country2, display.title)
             }
-            views.setViewVisibility(R.id.clock, if (clock) View.VISIBLE else View.GONE)
+            views.setViewVisibility(R.id.clock, if (clock || glass) View.VISIBLE else View.GONE)   // the glass layouts are built around the clock
             views.setTextViewText(R.id.flag, display.flag)
             views.setTextViewText(R.id.country, display.title)
             views.setTextViewText(R.id.refresh, if (busy) "…" else "↻")
@@ -323,11 +350,11 @@ class IpWidget : AppWidgetProvider() {
             views.setTextViewText(R.id.rate, arrow + Rate.format(Rate.cached(context)))
             val cellBackground = when {
                 glass -> when (trend) { 1 -> R.drawable.tile_rate_red; -1 -> R.drawable.tile_rate_green; else -> R.drawable.tile_rate_flat }
-                layout == 0 -> when (trend) { 1 -> R.drawable.rate_bg_red; -1 -> R.drawable.rate_bg_green; else -> R.drawable.rate_bg }
+                layout == 4 -> when (trend) { 1 -> R.drawable.rate_bg_red; -1 -> R.drawable.rate_bg_green; else -> R.drawable.rate_bg }
                 else -> 0   // the first and second layouts keep their own dollar tile
             }
             if (cellBackground != 0) views.setInt(R.id.cell_rate, "setBackgroundResource", cellBackground)
-            if (layout == 0 && trend != 0) {
+            if (layout == 4 && trend != 0) {
                 // the pale cell needs dark text of its own colour (the plain layout also sits on light backgrounds)
                 val ink = if (trend == 1) 0xFFB3261E.toInt() else 0xFF1B7A43.toInt()
                 views.setTextColor(R.id.rate, ink)
@@ -342,6 +369,7 @@ class IpWidget : AppWidgetProvider() {
             views.setViewVisibility(R.id.extra, if (showRate || showUsage) View.VISIBLE else View.GONE)
 
             if (!styled) applyTheme(context, views)
+            if (glass) applyGlassTheme(context, views, layout)
 
             val refreshIntent = Intent(context, IpWidget::class.java).setAction(ACTION_REFRESH)
             val refreshPending = PendingIntent.getBroadcast(
@@ -356,6 +384,16 @@ class IpWidget : AppWidgetProvider() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
             views.setOnClickPendingIntent(R.id.root, openPending)
+
+            // the weather opens its details, the dollar opens its chart
+            fun openWith(code: Int, what: String) = PendingIntent.getActivity(
+                context, code, Intent(context, MainActivity::class.java).putExtra("open", what),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val weatherPending = openWith(4, "weather")
+            for (id in intArrayOf(R.id.weather_box, R.id.weather)) views.setOnClickPendingIntent(id, weatherPending)
+            val ratePending = openWith(5, "rate")
+            for (id in intArrayOf(R.id.cell_rate, R.id.rate)) views.setOnClickPendingIntent(id, ratePending)
 
             return views
         }
