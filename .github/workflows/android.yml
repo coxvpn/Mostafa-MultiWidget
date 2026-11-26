@@ -48,28 +48,11 @@ jobs:
           name: Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}
           path: android/Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk
 
-      - name: Fetch the newest Windows installer (it is published beside the app)
-        continue-on-error: true      # no Windows release yet: the Android release still goes out
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG=$(gh release list --limit 50 --json tagName --jq '[.[] | select(.tagName | startswith("win-v")) | .tagName][0] // empty')
-          if [ -z "$TAG" ]; then
-            echo "::warning::No Windows release (tag win-v...) exists yet, so only the app is published."
-            exit 0
-          fi
-          mkdir -p windows
-          gh release download "$TAG" --pattern "*Setup.exe" --dir windows
-          mv windows/*Setup.exe "windows/Mostafa-MultiWidget-Windows-v${{ steps.ver.outputs.version }}.exe"
-          echo "Windows program ${TAG#win-v} is published as Mostafa-MultiWidget-Windows-v${{ steps.ver.outputs.version }}.exe"
-
       - name: Publish a Release (the app's "check for updates" reads it)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.version }}
           name: Mostafa MultiWidget ${{ steps.ver.outputs.version }}
           body_path: android/release-notes.md   # the changes, written in the Release
-          files: |
-            android/Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk
-            windows/Mostafa-MultiWidget-Windows-v${{ steps.ver.outputs.version }}.exe
+          files: android/Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk
           make_latest: true
