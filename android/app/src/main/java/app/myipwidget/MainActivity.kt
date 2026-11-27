@@ -77,6 +77,9 @@ class MainActivity : Activity() {
         refreshButton = findViewById(R.id.refresh)
         refreshButton.setOnClickListener { refresh() }
         findViewById<View>(R.id.card_rate).setOnClickListener { DetailDialogs.showPrices(this) }
+        findViewById<View>(R.id.card_top_apps).setOnClickListener {
+            DetailDialogs.showTopApps(this) { grantUsage.performClick() }
+        }
         findViewById<View>(R.id.card_usage).setOnClickListener { DetailDialogs.showWeek(this) { grantUsage.performClick() } }
         findViewById<View>(R.id.tile_weather).setOnClickListener { DetailDialogs.showForecast(this) }
         ipView.setOnClickListener { copyIp() }
@@ -187,6 +190,8 @@ class MainActivity : Activity() {
             noticeToggle.text = getString(if (open) R.string.notice_toggle_open else R.string.notice_toggle_closed)
         }
         findViewById<Button>(R.id.check_update).setOnClickListener { checkUpdate() }
+        findViewById<Button>(R.id.check_update_home).setOnClickListener { checkUpdate() }
+        findViewById<View>(R.id.tile_date).setOnClickListener { CalendarDialog.show(this) }
         buildBeepSlots()
         setupAlertsAndTools()
         colorizeCards()
@@ -540,6 +545,7 @@ class MainActivity : Activity() {
         when (what) {
             "rate" -> DetailDialogs.showRate(this)
             "weather" -> DetailDialogs.showForecast(this)
+            "calendar" -> CalendarDialog.show(this)
         }
     }
 
@@ -552,6 +558,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         handleOpen(intent)
+        quietUpdateCheck()
         // coming back from the usage-access settings page: use the new permission
         if (waitingUsage) {
             waitingUsage = false
@@ -739,31 +746,10 @@ class MainActivity : Activity() {
                         },
                         LinearLayout.LayoutParams(wrap, wrap),
                     )
-                    val pkg = app.pkg
-                    if (pkg != null) {
-                        val ripple = android.util.TypedValue()
-                        theme.resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)
-                        row.setBackgroundResource(ripple.resourceId)
-                        row.setOnClickListener { openAppData(pkg) }
-                    }
                     box.addView(row)
                 }
             }
         }.start()
-    }
-
-    /** The data page of one app: the closest page Android offers, else the app's own settings page. */
-    private fun openAppData(pkg: String) {
-        val uri = android.net.Uri.parse("package:" + pkg)
-        try {
-            startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, uri))
-        } catch (e: Exception) {
-            try {
-                startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, uri))
-            } catch (e2: Exception) {
-                // no settings page to open
-            }
-        }
     }
 
     private fun loadChart() {
@@ -1248,7 +1234,41 @@ class MainActivity : Activity() {
 
     // ---------------------------------------------------------------- update check
     /** Asks GitHub for the latest release and says whether a newer version exists; the download page opens on request. */
+    /** The newer version found by the last check (and the version of this app), if there is one. */
+    private var pendingUpdate: Pair<Latest, String>? = null
+    private var updateButtonColors: android.content.res.ColorStateList? = null
+
+    /** The line under the update button on the first page. [accent]: a new version (orange), else grey. */
+    private fun setUpdateNote(text: String, accent: Boolean) {
+        findViewById<TextView>(R.id.update_note).apply {
+            this.text = text
+            visibility = View.VISIBLE
+            setTextColor(if (accent) 0xFFF08A1C.toInt() else 0xFF8A8A8A.toInt())
+            typeface = if (accent) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
+        }
+    }
+
+    /** The update button of the first page turns orange while a new version waits. */
+    private fun markUpdateButton(on: Boolean) {
+        val button = findViewById<Button>(R.id.check_update_home)
+        if (updateButtonColors == null) updateButtonColors = button.textColors
+        if (on) {
+            button.text = getString(R.string.update_button_new)
+            button.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF08A1C.toInt())
+            button.setTextColor(0xFFFFFFFF.toInt())
+        } else {
+            button.text = getString(R.string.update_check)
+            button.backgroundTintList = null
+            updateButtonColors?.let { button.setTextColor(it) }
+        }
+    }
+
     private fun checkUpdate() {
+        val known = pendingUpdate
+        if (known != null) {   // the check already found it: show the changes and the buttons at once
+            showUpdateDialog(known.first, known.second)
+            return
+        }
         Toast.makeText(this, R.string.update_checking, Toast.LENGTH_SHORT).show()
         lookForUpdate(manual = true)
     }
@@ -1263,6 +1283,7 @@ class MainActivity : Activity() {
      * otherwise (the quiet check when the app opens) only a new version shows a banner, nothing else.
      */
     private fun lookForUpdate(manual: Boolean) {
+        if (pendingUpdate == null) setUpdateNote(getString(R.string.update_note_checking), false)
         Thread {
             var latest: Latest? = null
             try {
@@ -1288,11 +1309,18 @@ class MainActivity : Activity() {
                 val found = latest
                 if (found == null || found.tag.isEmpty()) {
                     if (manual) Toast.makeText(this, R.string.update_failed, Toast.LENGTH_LONG).show()
+                    if (pendingUpdate == null) setUpdateNote(getString(R.string.update_note_failed), false)
                 } else if (versionNewer(found.tag, mine)) {
+                    pendingUpdate = Pair(found, mine)
                     showUpdateBanner(found, mine)
+                    markUpdateButton(true)
+                    setUpdateNote(getString(R.string.update_note_new, found.tag.trimStart('v', 'V'), mine), true)
                     if (manual) showUpdateDialog(found, mine)
                 } else {
+                    pendingUpdate = null
                     findViewById<TextView>(R.id.update_banner).visibility = View.GONE
+                    markUpdateButton(false)
+                    setUpdateNote(getString(R.string.update_note_ok, mine), false)
                     if (manual) Toast.makeText(this, getString(R.string.update_none, mine), Toast.LENGTH_LONG).show()
                 }
             }
@@ -1336,11 +1364,11 @@ class MainActivity : Activity() {
             .show()
     }
 
-    /** The quiet check when the app opens: at most once every six hours. */
+    /** The quiet check every time the app is opened (not twice within two minutes). */
     private fun quietUpdateCheck() {
         val prefs = getSharedPreferences("update_check", MODE_PRIVATE)
         val now = System.currentTimeMillis()
-        if (now - prefs.getLong("last", 0L) < 6 * 3600_000L) return
+        if (now - prefs.getLong("last", 0L) < 2 * 60_000L) return
         prefs.edit().putLong("last", now).apply()
         lookForUpdate(manual = false)
     }

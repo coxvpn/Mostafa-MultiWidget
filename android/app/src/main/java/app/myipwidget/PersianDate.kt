@@ -35,6 +35,33 @@ object PersianDate {
         return Triple(jy, jm, jd)
     }
 
+    fun monthName(month: Int): String = MONTHS[month - 1]
+
+    /** [index] 0 = Saturday ... 6 = Friday. */
+    fun weekdayName(index: Int): String = DAYS[index]
+
+    /** The Gregorian date (at noon, local time) of a Persian date. */
+    fun toGregorian(jy: Int, jm: Int, jd: Int): Calendar {
+        val cal = Calendar.getInstance()
+        cal.clear()
+        cal.set(jy + 621, Calendar.MARCH, 21, 12, 0, 0)
+        cal.add(Calendar.DAY_OF_YEAR, (if (jm <= 7) (jm - 1) * 31 else 186 + (jm - 7) * 30) + jd - 1)
+        val want = jy * 10000 + jm * 100 + jd
+        repeat(6) {   // Nowruz falls between 20 and 22 March: walk to the exact day
+            val (y, mo, d) = fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+            val have = y * 10000 + mo * 100 + d
+            if (have == want) return cal
+            cal.add(Calendar.DAY_OF_YEAR, if (have < want) 1 else -1)
+        }
+        return cal
+    }
+
+    fun daysInMonth(jy: Int, jm: Int): Int = when {
+        jm <= 6 -> 31
+        jm <= 11 -> 30
+        else -> Math.round((toGregorian(jy + 1, 1, 1).timeInMillis - toGregorian(jy, 12, 1).timeInMillis) / 86400000.0).toInt()
+    }
+
     fun digits(value: Int): String =
         value.toString().map { if (it in '0'..'9') '۰' + (it - '0') else it }.joinToString("")
 

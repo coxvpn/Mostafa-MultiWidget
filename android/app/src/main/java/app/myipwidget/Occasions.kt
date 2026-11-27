@@ -50,6 +50,17 @@ object Occasions {
     }
 
     /** Only the little sign (the widget and the notification show just this). */
+    /** The widget chip: a holiday says "تعطیل" and, when the day has a name, the name after it; other days keep their sign. */
+    fun chipText(o: Occasion): String {
+        if (!o.holiday) return sign(o)
+        val name = o.text.trim()
+        return when {
+            name.isEmpty() || name == "جمعه" -> "تعطیل"
+            name.contains("تعطیل") -> name
+            else -> "تعطیل · " + name
+        }
+    }
+
     fun sign(o: Occasion): String = if (o.holiday) "🔴" else "🌙"
 
     /** The text with its little sign, for the widget and the notification. */

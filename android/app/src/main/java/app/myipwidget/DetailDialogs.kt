@@ -75,6 +75,56 @@ object DetailDialogs {
         }.start()
     }
 
+    // ------------------------------------------------------------ the apps that used the most data today
+    fun showTopApps(activity: Activity, onGrant: () -> Unit) {
+        val body = page(activity)
+        body.addView(text(activity, activity.getString(R.string.forecast_loading), 14f))
+        val dialog = open(activity, activity.getString(R.string.section_top_apps), body)
+        Thread {
+            val list = Usage.topApps(activity.applicationContext, 10)
+            val icons = list.map { app ->
+                try { app.pkg?.let { activity.packageManager.getApplicationIcon(it) } } catch (e: Exception) { null }
+            }
+            activity.runOnUiThread {
+                if (activity.isFinishing || !dialog.isShowing) return@runOnUiThread
+                body.removeAllViews()
+                if (list.isEmpty()) {
+                    val access = Usage.hasAccess(activity)
+                    body.addView(text(activity, activity.getString(if (access) R.string.top_apps_none else R.string.usage_no_access), 14f))
+                    if (!access) {
+                        body.addView(android.widget.Button(activity).apply {
+                            text = activity.getString(R.string.week_grant)
+                            setOnClickListener { dialog.dismiss(); onGrant() }
+                        })
+                    }
+                    return@runOnUiThread
+                }
+                for ((i, app) in list.withIndex()) {
+                    val row = LinearLayout(activity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        layoutDirection = View.LAYOUT_DIRECTION_LTR
+                        setPadding(0, dp(activity, 8), 0, dp(activity, 8))
+                    }
+                    row.addView(android.widget.ImageView(activity).apply { setImageDrawable(icons[i]) }, LinearLayout.LayoutParams(dp(activity, 32), dp(activity, 32)))
+                    row.addView(
+                        text(activity, app.name, 14f).apply {
+                            maxLines = 1
+                            ellipsize = android.text.TextUtils.TruncateAt.END
+                            setPadding(dp(activity, 12), 0, dp(activity, 8), 0)
+                        },
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
+                    )
+                    row.addView(
+                        text(activity, android.text.format.Formatter.formatShortFileSize(activity, app.bytes), 13f, true).apply { gravity = Gravity.END },
+                        LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT),
+                    )
+                    body.addView(row)
+                }
+            }
+        }.start()
+    }
+
     // ------------------------------------------------------------ the last 7 days of data use
     fun showWeek(activity: Activity, onGrant: () -> Unit) {
         val body = page(activity)

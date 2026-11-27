@@ -203,7 +203,9 @@ class IpWidget : AppWidgetProvider() {
             for (id in intArrayOf(R.id.weather, R.id.date, R.id.country, R.id.country2, R.id.ip, R.id.wifi, R.id.sim, R.id.refresh, R.id.clock)) {
                 views.setTextColor(id, look.text)
             }
-            for (id in intArrayOf(R.id.date2, R.id.detail, R.id.lbl_wifi, R.id.lbl_sim)) views.setTextColor(id, look.dim)
+            for (id in intArrayOf(R.id.date2, R.id.detail)) views.setTextColor(id, look.dim)
+            views.setInt(R.id.icon_wifi, "setColorFilter", look.text)
+            views.setInt(R.id.icon_sim, "setColorFilter", look.text)
             views.setTextColor(R.id.temp_high, look.up)
             views.setTextColor(R.id.temp_low, look.down)
             views.setTextColor(R.id.prayer_label, look.prayer)
@@ -334,7 +336,7 @@ class IpWidget : AppWidgetProvider() {
             val occasion = if (showDate) Occasions.today() else null
             if (occasion != null) {
                 views.setViewVisibility(R.id.occasion, View.VISIBLE)
-                views.setTextViewText(R.id.occasion, Occasions.sign(occasion))
+                views.setTextViewText(R.id.occasion, Occasions.chipText(occasion))
                 views.setInt(R.id.occasion, "setBackgroundResource", if (occasion.holiday) R.drawable.chip_red else R.drawable.chip_purple)
             } else {
                 views.setViewVisibility(R.id.occasion, View.GONE)
@@ -342,8 +344,6 @@ class IpWidget : AppWidgetProvider() {
 
             // bottom row: three cells, each with a small label and a big value
             views.setTextViewText(R.id.lbl_rate, (if (styled && !glass) "\uD83D\uDCB5 " else "") + context.getString(R.string.widget_rate_label))
-            views.setTextViewText(R.id.lbl_wifi, context.getString(R.string.widget_wifi_label))
-            views.setTextViewText(R.id.lbl_sim, context.getString(R.string.widget_sim_label))
             // an arrow shows the last change of the rate: up (pale red) or down (pale green); no arrow before the first change
             val trend = Rate.trend(context)
             val arrow = when (trend) { 1 -> "\u25B2 "; -1 -> "\u25BC "; else -> "" }
@@ -360,12 +360,11 @@ class IpWidget : AppWidgetProvider() {
                 views.setTextColor(R.id.rate, ink)
                 views.setTextColor(R.id.lbl_rate, ink)
             }
-            views.setTextViewText(R.id.wifi, (if (glass) "Wi-Fi: " else if (styled) "Wi-Fi " else "") + Usage.wifiValue(context, today))
-            views.setTextViewText(R.id.sim, (if (glass) "SIM: " else if (styled) "SIM " else "") + Usage.simValue(context, today))
+            views.setTextViewText(R.id.wifi, "Wi-Fi: " + Usage.wifiValue(context, today))
+            views.setTextViewText(R.id.sim, "SIM: " + Usage.simValue(context, today))
             views.setViewVisibility(R.id.usage_box, if (showUsage) View.VISIBLE else View.GONE)
             views.setViewVisibility(R.id.cell_rate, if (showRate) View.VISIBLE else View.GONE)
-            views.setViewVisibility(R.id.cell_wifi, if (showUsage) View.VISIBLE else View.GONE)
-            views.setViewVisibility(R.id.cell_sim, if (showUsage) View.VISIBLE else View.GONE)
+            views.setViewVisibility(R.id.usage_box, if (showUsage) View.VISIBLE else View.GONE)
             views.setViewVisibility(R.id.extra, if (showRate || showUsage) View.VISIBLE else View.GONE)
 
             if (!styled) applyTheme(context, views)
@@ -392,6 +391,8 @@ class IpWidget : AppWidgetProvider() {
             )
             val weatherPending = openWith(4, "weather")
             for (id in intArrayOf(R.id.weather_box, R.id.weather)) views.setOnClickPendingIntent(id, weatherPending)
+            val calendarPending = openWith(6, "calendar")
+            for (id in intArrayOf(R.id.date, R.id.date2, R.id.info)) views.setOnClickPendingIntent(id, calendarPending)
             val ratePending = openWith(5, "rate")
             for (id in intArrayOf(R.id.cell_rate, R.id.rate)) views.setOnClickPendingIntent(id, ratePending)
 

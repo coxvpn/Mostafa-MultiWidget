@@ -11,25 +11,34 @@ android {
         applicationId = "app.myipwidget"
         minSdk = 26
         targetSdk = 34
-        versionCode = 85
-        versionName = "1.21.19"
+        versionCode = 91
+        versionName = "1.21.25"
     }
 
-    // A fixed key, so each new version installs over the previous one
-    // (the build machine would otherwise invent a new key every time).
+    // The private key: the build machine gets it from the repository's Secrets (see README), it is not in the code.
+    // The same key for every version, so each new version installs over the previous one.
     signingConfigs {
-        getByName("debug") {
-            storeFile = file("debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_FILE")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
+    }
+
+    lint {
+        checkReleaseBuilds = false   // a lint warning must not stop a release
+        abortOnError = false
     }
     // the file is named after the app and its version (no "app-debug")
     applicationVariants.all {

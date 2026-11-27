@@ -43,6 +43,10 @@
 - **درباره:** زبان، بررسی به‌روزرسانی و لینک کد.
 
 
+### امضای برنامه (کلید خصوصی)
+
+ساخت برنامه با یک کلید خصوصی امضا می‌شود تا نسخه‌های تازه روی قبلی نصب شوند و گوگل پلی‌پروتکت اعتماد بیشتری کند. کلید در کد نیست؛ باید ۴ مقدار را در **Settings ← Secrets and variables ← Actions ← New repository secret** بسازید: `KEYSTORE_BASE64`، `KEYSTORE_PASSWORD`، `KEY_ALIAS` و `KEY_PASSWORD`. بدون آن‌ها ساخت با پیام خطای روشن متوقف می‌شود. فایل کلید (`.jks`) را هرگز در ریپازیتوری نگذارید و یک نسخه‌ی پشتیبان از آن نگه دارید؛ با گم شدنش نمی‌توان نسخه‌ی تازه روی نصب‌های قبلی داد.
+
 ---
 
 <a name="english"></a>
@@ -84,6 +88,10 @@ Requires Android 8 or newer.
 - **About:** language, check for updates and the source link.
 
 **Build from source:** run the **Build Android app** workflow in the Actions tab. The version is read from `android/app/build.gradle.kts` (`versionName`) and a Release with `Mostafa-MultiWidget-vX.Y.Z.apk` is published.
+
+### App signing (private key)
+
+The build is signed with a private key, so new versions install over the old ones and Google Play Protect trusts the app more. The key is not in the code: create 4 values in **Settings > Secrets and variables > Actions > New repository secret**: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and `KEY_PASSWORD`. Without them the build stops with a clear error. Never put the key file (`.jks`) in the repository, and keep a backup of it: if it is lost, a new version can no longer be installed over the old installs.
 
 ---
 

@@ -190,7 +190,7 @@
     <string name="update_downloading">Downloading… %1$d%%</string>
     <string name="update_allow_install">Allow this app to install apps on the next page, then tap the update button again.</string>
     <string name="update_download_failed">The download did not finish. Check the internet (turn on the VPN if GitHub is blocked).</string>
-    <string name="update_install_failed">The installation did not finish.</string>
+    <string name="update_install_failed">The installation did not finish. If the old version was signed with another key, back up, uninstall it and install again.</string>
     <string name="update_banner">A new version %1$s is out. Tap to see.</string>
     <string name="city_default_tehran">The default city is Tehran. You can pick your own city in the settings.</string>
     <string name="alert_channel">Alerts</string>
@@ -249,4 +249,15 @@
     <string name="week_title">Data use, last 7 days</string>
     <string name="week_total">Total</string>
     <string name="week_grant">Allow usage access</string>
+    <string name="calendar_title">Persian calendar</string>
+    <string name="cal_prev">Previous</string>
+    <string name="cal_next">Next</string>
+    <string name="cal_today">Today</string>
+    <string name="cal_month_occasions">Occasions this month</string>
+    <string name="cal_none">No occasions recorded for this month.</string>
+    <string name="update_note_new">⬆ Version %1$s is out (you have %2$s). Tap Update to see the changes and install it.</string>
+    <string name="update_note_ok">✓ You have the latest version (%1$s).</string>
+    <string name="update_note_failed">Could not check for a new version. Check the internet.</string>
+    <string name="update_note_checking">Checking for a new version…</string>
+    <string name="update_button_new">⬆ Update</string>
 </resources>

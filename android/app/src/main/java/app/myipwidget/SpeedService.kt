@@ -270,7 +270,7 @@ class SpeedService : Service() {
         return LRM + Weather.format(weather) +
             (if (withAqi && weather.aqi > 0) DOT + "AQI " + weather.aqi else "") +
             DOT + FSI + (if (withAqi) Prefs.cityLabel(this) else Prefs.cityName(this)) + PDI + LRM +
-            (if (withAqi) (Occasions.today()?.let { DOT + FSI + Occasions.sign(it) + PDI } ?: "") else "")
+            (if (withAqi && !Prefs.noticeDate(this)) (Occasions.today()?.let { DOT + FSI + Occasions.sign(it) + PDI } ?: "") else "")
     }
 
     /** The Persian part of the date line, made a little bigger in the expanded text. */
@@ -359,7 +359,10 @@ class SpeedService : Service() {
             } else {
                 (total / 1024L).toString() + " KB/s"
             }
-            title = "\u2193\u2191 " + number.substringBefore(' ').padStart(5, '\u2007') + " " + number.substringAfter(' ')
+            // the speed is written only while something is sent or received; at zero the title row stays, blank
+            // (a figure space keeps its height), so nothing moves when the download starts or stops
+            title = if (down + up < MIN_SPEED) "\u2007"
+            else "\u2193\u2191 " + number.substringBefore(' ').padStart(5, '\u2007') + " " + number.substringAfter(' ')
             bigTitle = title
             collapsedParts = shorts
             expandedLines = longs.map { it.second }
@@ -438,6 +441,7 @@ class SpeedService : Service() {
      * [MIN_SPEED] it shows 0, so the icon does not flicker with tiny background traffic.
      */
     private fun speedIcon(bytesPerSecond: Double, code: String = ""): Icon {
+        if (bytesPerSecond < MIN_SPEED) return if (code.isEmpty()) blankIcon() else textIcon(code)
         val kb = if (bytesPerSecond < MIN_SPEED) 0.0 else bytesPerSecond / 1024.0
         val number: String
         val unit: String
@@ -478,6 +482,9 @@ class SpeedService : Service() {
     }
 
     /** White text on a transparent square: the system tints it to match the status bar. */
+    /** An icon with nothing drawn: the status bar shows no number while nothing is sent or received. */
+    private fun blankIcon(): Icon = Icon.createWithBitmap(Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888))
+
     private fun textIcon(text: String): Icon {
         val size = 96
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)

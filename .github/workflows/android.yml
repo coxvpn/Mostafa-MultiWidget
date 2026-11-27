@@ -34,13 +34,31 @@ jobs:
           echo "::notice title=Version::Mostafa MultiWidget $VER"
           echo "## Mostafa MultiWidget $VER" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Build the app (version ${{ steps.ver.outputs.version }})
+      - name: Check the signing key (the 4 Secrets of the repository)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error title=Signing key missing::Add the 4 Secrets KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD (Settings > Secrets and variables > Actions). See README."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build the app (version ${{ steps.ver.outputs.version }}), signed with the private key
         working-directory: android
-        run: gradle --no-daemon assembleDebug
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle --no-daemon assembleRelease
 
       - name: Name the app file
         working-directory: android
-        run: cp app/build/outputs/apk/debug/*.apk "Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk"
+        run: cp app/build/outputs/apk/release/*.apk "Mostafa-MultiWidget-v${{ steps.ver.outputs.version }}.apk"
 
       - name: Keep the app (download it from the run page)
         uses: actions/upload-artifact@v4
