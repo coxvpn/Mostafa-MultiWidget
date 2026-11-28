@@ -260,4 +260,6 @@
     <string name="update_note_failed">Could not check for a new version. Check the internet.</string>
     <string name="update_note_checking">Checking for a new version…</string>
     <string name="update_button_new">⬆ Update</string>
+    <string name="cal_legend">Small number on the left: Gregorian • on the right: lunar (may differ by a day from the official Iranian announcement)</string>
+    <string name="cal_lunar">lunar</string>
 </resources>

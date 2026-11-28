@@ -37,6 +37,27 @@ object PersianDate {
 
     fun monthName(month: Int): String = MONTHS[month - 1]
 
+    private val HIJRI_MONTHS = arrayOf(
+        "محرم", "صفر", "ربیع‌الاول", "ربیع‌الثانی", "جمادی‌الاول", "جمادی‌الثانی",
+        "رجب", "شعبان", "رمضان", "شوال", "ذی‌القعده", "ذی‌الحجه",
+    )
+
+    fun hijriMonthName(month: Int): String = HIJRI_MONTHS[month - 1]
+
+    /** (year, month, day) of the Islamic calendar (Umm al-Qura), or null if the phone has none. */
+    fun hijri(cal: Calendar): Triple<Int, Int, Int>? = try {
+        val h = java.time.chrono.HijrahDate.from(
+            java.time.LocalDate.of(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH)),
+        )
+        Triple(
+            h.get(java.time.temporal.ChronoField.YEAR_OF_ERA),
+            h.get(java.time.temporal.ChronoField.MONTH_OF_YEAR),
+            h.get(java.time.temporal.ChronoField.DAY_OF_MONTH),
+        )
+    } catch (e: Exception) {
+        null
+    }
+
     /** [index] 0 = Saturday ... 6 = Friday. */
     fun weekdayName(index: Int): String = DAYS[index]
 

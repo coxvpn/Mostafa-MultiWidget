@@ -543,7 +543,7 @@ class MainActivity : Activity() {
         val what = from?.getStringExtra("open") ?: return
         from.removeExtra("open")
         when (what) {
-            "rate" -> DetailDialogs.showRate(this)
+            "rate" -> DetailDialogs.showPrices(this)
             "weather" -> DetailDialogs.showForecast(this)
             "calendar" -> CalendarDialog.show(this)
         }

@@ -11,8 +11,8 @@ android {
         applicationId = "app.myipwidget"
         minSdk = 26
         targetSdk = 34
-        versionCode = 91
-        versionName = "1.21.25"
+        versionCode = 93
+        versionName = "1.21.27"
     }
 
     // The private key: the build machine gets it from the repository's Secrets (see README), it is not in the code.

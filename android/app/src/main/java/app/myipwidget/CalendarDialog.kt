@@ -30,6 +30,13 @@ object CalendarDialog {
             setPadding(dp(activity, 16), dp(activity, 8), dp(activity, 16), dp(activity, 4))
         }
         val title = TextView(activity).apply { textSize = 18f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER }
+        val subtitle = TextView(activity).apply { textSize = 12f; alpha = 0.75f; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(activity, 8)) }
+        val legend = TextView(activity).apply {
+            text = activity.getString(R.string.cal_legend)
+            textSize = 11f
+            alpha = 0.7f
+            setPadding(0, dp(activity, 6), 0, 0)
+        }
         val grid = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
         val info = TextView(activity).apply { textSize = 14f; setPadding(0, dp(activity, 10), 0, dp(activity, 6)) }
         val list = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
@@ -42,16 +49,56 @@ object CalendarDialog {
             if (bold) typeface = Typeface.DEFAULT_BOLD
         }
 
+        fun dayCell(d: Int, dayCal: Calendar, color: Int?, bold: Boolean): LinearLayout = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            addView(cell(PersianDate.digits(d), bold).apply { if (color != null) setTextColor(color) })
+            val small = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutDirection = View.LAYOUT_DIRECTION_LTR
+                setPadding(dp(activity, 4), 0, dp(activity, 4), 0)
+            }
+            fun tiny(text: String, gravity: Int) = TextView(activity).apply {
+                this.text = text
+                textSize = 9f
+                alpha = 0.65f
+                this.gravity = gravity
+                if (color != null) setTextColor(color)
+            }
+            small.addView(tiny(dayCal.get(Calendar.DAY_OF_MONTH).toString(), Gravity.START), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            small.addView(tiny(PersianDate.hijri(dayCal)?.let { PersianDate.digits(it.third) } ?: "", Gravity.END), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(small, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
+
         fun infoText(y: Int, m: Int, d: Int): String {
             val cal = PersianDate.toGregorian(y, m, d)
             val weekday = PersianDate.weekdayName(cal.get(Calendar.DAY_OF_WEEK) % 7)
             val occasion = Occasions.today(cal)
+            val lunar = PersianDate.hijri(cal)?.let { PersianDate.digits(it.third) + " " + PersianDate.hijriMonthName(it.second) + " " + PersianDate.digits(it.first) + " (" + activity.getString(R.string.cal_lunar) + ")" }
             return weekday + " " + PersianDate.digits(d) + " " + PersianDate.monthName(m) + " " + PersianDate.digits(y) + "\n" +
-                PersianDate.gregorian(cal) + (if (occasion != null) "\n" + Occasions.label(occasion) else "")
+                PersianDate.gregorian(cal) + (if (lunar != null) "\n" + lunar else "") + (if (occasion != null) "\n" + Occasions.label(occasion) else "")
         }
 
         fun render() {
             title.text = PersianDate.monthName(month) + " " + PersianDate.digits(year)
+            val monthDays = PersianDate.daysInMonth(year, month)
+            val firstDay = PersianDate.toGregorian(year, month, 1)
+            val lastDay = PersianDate.toGregorian(year, month, monthDays)
+            val gMonths = java.text.DateFormatSymbols.getInstance(java.util.Locale.US).shortMonths
+            val g1 = firstDay.get(Calendar.MONTH); val g2 = lastDay.get(Calendar.MONTH)
+            val gy1 = firstDay.get(Calendar.YEAR); val gy2 = lastDay.get(Calendar.YEAR)
+            val gregorianLine = when {
+                gy1 != gy2 -> gMonths[g1] + " " + gy1 + " \u2013 " + gMonths[g2] + " " + gy2
+                g1 != g2 -> gMonths[g1] + " \u2013 " + gMonths[g2] + " " + gy1
+                else -> gMonths[g1] + " " + gy1
+            }
+            val h1 = PersianDate.hijri(firstDay); val h2 = PersianDate.hijri(lastDay)
+            val lunarLine = if (h1 == null || h2 == null) "" else when {
+                h1.first != h2.first -> PersianDate.hijriMonthName(h1.second) + " " + PersianDate.digits(h1.first) + " \u2013 " + PersianDate.hijriMonthName(h2.second) + " " + PersianDate.digits(h2.first)
+                h1.second != h2.second -> PersianDate.hijriMonthName(h1.second) + " \u2013 " + PersianDate.hijriMonthName(h2.second) + " " + PersianDate.digits(h1.first)
+                else -> PersianDate.hijriMonthName(h1.second) + " " + PersianDate.digits(h1.first)
+            }
+            subtitle.text = gregorianLine + (if (lunarLine.isNotEmpty()) "\n" + lunarLine else "")
             grid.removeAllViews()
             val head = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
             for (name in listOf("ش", "ی", "د", "س", "چ", "پ", "ج")) {
@@ -67,19 +114,21 @@ object CalendarDialog {
                 val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
                 for (column in 0..6) {
                     if ((week == 0 && column < offset) || day > days) {
-                        row.addView(View(activity), LinearLayout.LayoutParams(0, dp(activity, 42), 1f))
+                        row.addView(View(activity), LinearLayout.LayoutParams(0, dp(activity, 56), 1f))
                         continue
                     }
                     val d = day++
-                    val occasion = Occasions.today(PersianDate.toGregorian(year, month, d))
+                    val dayCal = PersianDate.toGregorian(year, month, d)
+                    val occasion = Occasions.today(dayCal)
                     val isToday = year == today.first && month == today.second && d == today.third
                     val isSelected = Triple(year, month, d) == selected
+                    val color = when {
+                        occasion != null && occasion.holiday -> HOLIDAY
+                        occasion != null -> OCCASION
+                        else -> null
+                    }
                     row.addView(
-                        cell(PersianDate.digits(d), isToday || isSelected).apply {
-                            when {
-                                occasion != null && occasion.holiday -> setTextColor(HOLIDAY)
-                                occasion != null -> setTextColor(OCCASION)
-                            }
+                        dayCell(d, dayCal, color, isToday || isSelected).apply {
                             if (isSelected) setBackgroundResource(R.drawable.cal_selected)
                             else if (isToday) setBackgroundResource(R.drawable.cal_today)
                             setOnClickListener {
@@ -87,7 +136,7 @@ object CalendarDialog {
                                 render()
                             }
                         },
-                        LinearLayout.LayoutParams(0, dp(activity, 42), 1f).apply { setMargins(dp(activity, 2), dp(activity, 2), dp(activity, 2), dp(activity, 2)) },
+                        LinearLayout.LayoutParams(0, dp(activity, 56), 1f).apply { setMargins(dp(activity, 2), dp(activity, 2), dp(activity, 2), dp(activity, 2)) },
                     )
                 }
                 grid.addView(row)
@@ -142,7 +191,9 @@ object CalendarDialog {
         buttons.addView(button(R.string.cal_next) { go(1) }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
 
         body.addView(title)
+        body.addView(subtitle)
         body.addView(grid)
+        body.addView(legend)
         body.addView(info)
         body.addView(buttons)
         body.addView(list)

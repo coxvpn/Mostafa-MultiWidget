@@ -258,4 +258,6 @@
     <string name="update_note_failed">نسخه‌ی تازه بررسی نشد. اینترنت را بررسی کنید (اگر گیت‌هاب بسته است، فیلترشکن را روشن کنید).</string>
     <string name="update_note_checking">در حال بررسی نسخه‌ی تازه…</string>
     <string name="update_button_new">⬆ به‌روزرسانی</string>
+    <string name="cal_legend">عدد کوچک سمت چپ: میلادی • سمت راست: قمری (ممکن است یک روز با اعلام رسمی ایران فرق کند)</string>
+    <string name="cal_lunar">قمری</string>
 </resources>

@@ -59,8 +59,8 @@ object Prefs {
     /** 0 = the original layout, 1..2 = the coloured tile layouts (first, second), 3..4 = the glass layouts (third, fourth). */
     fun layout(context: Context): Int {
         val p = prefs(context)
-        if (!p.getBoolean("layout_swapped", false)) {   // the main layout is a new design now: start with it once
-            p.edit().putInt("layout", 0).putBoolean("layout_swapped", true).apply()
+        if (!p.getBoolean("layout_main_plain", false)) {   // the plain layout is the main one again: start with it once
+            p.edit().putInt("layout", 0).putBoolean("layout_main_plain", true).apply()
         }
         return p.getInt("layout", 0).let { if (it in 0..4) it else 0 }
     }
